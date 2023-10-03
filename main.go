@@ -1,30 +1,99 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
+var debug bool
+
 func HelloServer(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("This is an example server.\n"))
-	// fmt.Fprintf(w, "This is an example server.\n")
-	// io.WriteString(w, "This is an example server.\n")
+}
+
+func HomePage(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("Welcome to home page.\n"))
 }
 
 func main() {
+	var envFile string
+
+	flag.BoolVar(&debug, `debug`, false, `Enable debug mode`)
+	flag.StringVar(&envFile, `env`, ``, `ENV file path`)
+	flag.Parse()
+
+	if envFile != `` {
+		if _, err := os.Stat(envFile); errors.Is(err, os.ErrNotExist) {
+			log.Fatal(`[INFO] ENV was not found: `, envFile)
+
+			os.Exit(1)
+		}
+
+		if debug {
+			log.Println(`[INFO] Loading ENV file: `, envFile)
+		}
+
+		godotenv.Load(envFile)
+	} else if debug {
+		log.Println(`[INFO] ENV file is not defined`)
+	}
+
+	if debug {
+		log.Println("[INFO] ENV:\n" + strings.Join(os.Environ(), "\n"))
+	}
+
+	apiUri := os.Getenv(`APP_JIRA_BASE_URI`)
+	if apiUri == `` {
+		log.Fatal(`[ERROR] APP_JIRA_BASE_URI is not defined`)
+
+		os.Exit(1)
+	}
+
+	serverAddr := os.Getenv(`APP_SERVER_ADDR`)
+	if serverAddr == `` {
+		log.Fatal(`[ERROR] APP_SERVER_ADDR is not defined`)
+
+		os.Exit(1)
+	}
+
+	if debug {
+		log.Println(`[INFO] Starting in Debug mode server`, serverAddr)
+	}
+
+	var useTls string
+	useTls = strings.ToLower(os.Getenv(`APP_SERVER_TLS`))
+
 	http.HandleFunc("/hello", HelloServer)
+	http.HandleFunc("/", HomePage)
 
-	godotenv.Load(`.env.app`)
+	var err error
+	if useTls == `true` || useTls == `1` {
+		if os.Getenv(`APP_SERVER_TLS_CERT`) == `` {
+			log.Fatal(`[ERROR] ENV param must be defined: APP_SERVER_TLS_CERT`)
 
-	log.Println(`ENV:`, os.Environ())
+			os.Exit(1)
+		}
 
-	// err := http.ListenAndServeTLS(":443", "./server.crt", "./server.key", nil)
-	err := http.ListenAndServe(":80", nil)
+		if os.Getenv(`APP_SERVER_TLS_KEY`) == `` {
+			log.Fatal(`[ERROR] Env param must be defined: APP_SERVER_TLS_KEY`)
+
+			os.Exit(1)
+		}
+
+		err = http.ListenAndServeTLS(serverAddr, os.Getenv(`APP_SERVER_TLS_CERT`), os.Getenv(`APP_SERVER_TLS_KEY`), nil)
+	} else {
+		err = http.ListenAndServe(serverAddr, nil)
+	}
+
 	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
+		log.Fatal("[ERROR] ListenAndServe: ", err)
 	}
 }
