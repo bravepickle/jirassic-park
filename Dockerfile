@@ -1,5 +1,14 @@
-FROM golang:1-alpine3.17
+# Build app
+FROM golang:1-alpine3.17 AS go-app
 
+WORKDIR /app
+
+COPY . /app
+RUN go build -o jirassic-park
+
+# =========
+# init image
+FROM alpine:3.17
 
 # default basic auth credentials
 ARG AUTH_USER
@@ -14,11 +23,11 @@ ENV APP_JIRA_BASE_URI $JIRA_BASE_URI
 
 WORKDIR /app
 
-COPY .env.app /app/.env
-COPY *.go /app/
-COPY ./var/ /app/var
-COPY ./vendor /app/vendor
+COPY ./.env.app /app/.env
+COPY --from=go-app /app/jirassic-park /app/jirassic-park
 
 # RUN apk add --no-cache
 
 VOLUME /app
+
+CMD [ "/app/jirassic-park" ]
