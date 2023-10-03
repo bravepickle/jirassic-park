@@ -20,22 +20,23 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 }
 
 func HomePage(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("Welcome to home page.\n"))
+	w.Header().Set("Content-Type", "text/html")
 
-	filepath := `view/home.tmpl.html`
+	filename := `home.tmpl.html`
+	filepath := `view/` + filename
 	// tpl, err := ioutil.ReadFile(filepath)
 
 	// if err != nil {
 	// 	log.Println(`[WARN] Failed to read file: `, err)
 	// }
 
-	template, err := template.New(filepath).ParseFiles(filepath)
+	template, err := template.New(filename).ParseFiles(filepath)
+	// template, err := template.New(filepath).Parse(`<html>aaa</html>`)
 	if err != nil {
 		log.Println(`[WARN] Failed to parse file `, filepath, `: `, err)
 	}
 
-	err = template.Execute(w, nil)
+	err = template.Execute(w, `This is test input!!!`)
 	if err != nil {
 		log.Fatal(`[ERROR] Failed to build page from the template: `, err)
 	}

@@ -5,8 +5,11 @@ services:
         hostname: "${COMPOSE_PROJECT_NAME}-app"
         container_name: "${COMPOSE_PROJECT_NAME}_app"
         ports:
-            -
+            - "8000:80"
         env_file: ./.env.app
+        command: "/app/jirassic-park -env .env -debug"
+        volumes:
+            - "./view:/app/view"
         logging:
             driver: "json-file"
             options:

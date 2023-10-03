@@ -23,11 +23,12 @@ ENV APP_JIRA_BASE_URI $JIRA_BASE_URI
 
 WORKDIR /app
 
-COPY ./.env.app /app/.env
+COPY --from=go-app /app/.env.app /app/.env
+COPY --from=go-app /app/view /app/view
 COPY --from=go-app /app/jirassic-park /app/jirassic-park
 
 # RUN apk add --no-cache
 
 VOLUME /app
 
-CMD [ "/app/jirassic-park" ]
+CMD [ "/app/jirassic-park", "--env .env"]
