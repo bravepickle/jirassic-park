@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
@@ -21,6 +22,23 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 func HomePage(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("Welcome to home page.\n"))
+
+	filepath := `view/home.tmpl.html`
+	// tpl, err := ioutil.ReadFile(filepath)
+
+	// if err != nil {
+	// 	log.Println(`[WARN] Failed to read file: `, err)
+	// }
+
+	template, err := template.New(filepath).ParseFiles(filepath)
+	if err != nil {
+		log.Println(`[WARN] Failed to parse file `, filepath, `: `, err)
+	}
+
+	err = template.Execute(w, nil)
+	if err != nil {
+		log.Fatal(`[ERROR] Failed to build page from the template: `, err)
+	}
 }
 
 func main() {
