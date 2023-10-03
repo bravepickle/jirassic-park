@@ -15,7 +15,17 @@
 *.out
 
 # Dependency directories (remove the comment below to include it)
-# vendor/
+/vendor/
 
 # Go workspace file
 go.work
+
+# Application ignores
+/.env
+/.env.app
+/jirassic-park
+
+/var
+!/var/.gitkeep
+
+/build
