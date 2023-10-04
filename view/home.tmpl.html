@@ -4,16 +4,13 @@
 </head>
 <body>
 <h1>Welcome to home page!</h1>
-{{if .}}
-<img src="http://chart.apis.google.com/chart?chs=300x300&cht=qr&choe=UTF-8&chl={{.}}" />
-<br>
-{{.}}
-<br>
-<br>
-{{end}}
+
 <form action="/" name=f method="GET">
-    <input maxLength=1024 size=70 name=s value="" title="Text to QR Encode">
-    <input type=submit value="Show QR" name=qr>
+    <div><label>URI:</label> <input type="url" name="uri" autocomplete="no" value="{{ .uri }}"/></div>
+    <div><label for="user">Username:</label> <input type="url" id="user" name="user" autocomplete="no" value="{{ .user }}"/></div>
+    <div><label for="token">API token:</label> <input type="text" name="token" autocomplete="no" value=""/></div>
+
+    <input type=submit value="Show task relations" name=show>
 </form>
 </body>
 </html>

@@ -36,7 +36,12 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 		log.Println(`[WARN] Failed to parse file `, filepath, `: `, err)
 	}
 
-	err = template.Execute(w, `This is test input!!!`)
+	// err = template.Execute(w, `This is test input!!!`)
+	err = template.Execute(w, map[string]string{
+		`user`: os.Getenv(`APP_AUTH_USER`),
+		`uri`:  os.Getenv(`APP_JIRA_BASE_URI`),
+	})
+
 	if err != nil {
 		log.Fatal(`[ERROR] Failed to build page from the template: `, err)
 	}
