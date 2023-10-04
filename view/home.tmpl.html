@@ -16,7 +16,7 @@
             <h3 class="card-title">Settings</h3>
             <form action="/action" name="main-form" id="main-form" method="POST">
                 <div class="mb-3">
-                    <label class="form-label">URI:</label>
+                    <label class="form-label">Base API URI:</label>
                     <input class="form-control" type="text" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
 
                     <div id="uriHelpBlock" class="form-text">
@@ -60,7 +60,7 @@
 
                     <div>
                         <input class="btn btn-secondary mr-2" id="list-filters-btn" value="List filters" name=show>
-                        <input class="btn btn-primary" type=submit value="Show task relations" name=show>
+                        <input class="btn btn-primary" type=button value="Show task relations" name=show id="show-tasks-btn">
                     </div>
                 </div>
             </form>
@@ -126,7 +126,6 @@
             let notifyModal = new bootstrap.Modal(notifyModalEl);
 
             document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
-
                 if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
                     notify('[ERROR] Input values are not defined')
 
@@ -157,7 +156,36 @@
                     console.error(e);
                     notify('[ERROR] ' + e.message);
                 });
-            })
+            });
+
+            document.getElementById('show-tasks-btn').addEventListener('click', function onShowTasks() {
+                let jqlQuery = _.trim(filterEl.value)
+
+                if (!userEl.value || !tokenEl.value || !jqlQuery) {
+                    notify('[ERROR] Input values are not defined')
+
+                    return;
+                }
+
+                axios({
+                    method: 'get',
+                    url: _.trimEnd(uriBaseEl.value, '/') + '/search',
+                    params: {jql: jqlQuery},
+                    auth: {
+                        username: userEl.value,
+                        password: tokenEl.value
+                    },
+                    withCredentials: true,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                .then((response) => console.log(response))
+                .catch(function (e) {
+                    console.error(e);
+                    notify('[ERROR] ' + e.message);
+                });
+            });
 
             inputSaveEl.addEventListener('click', () => saveInput());
             inputRestoreEl.addEventListener('click', () => restoreInput());
