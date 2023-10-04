@@ -4,7 +4,10 @@ FROM golang:1-alpine3.17 AS go-app
 WORKDIR /app
 
 COPY . /app
-RUN go build -o jirassic-park
+RUN apk add --no-cache sed \
+    && go mod vendor \
+    && go mod vendor \
+    && go build -o jirassic-park
 
 # =========
 # init image
@@ -25,6 +28,7 @@ WORKDIR /app
 
 COPY --from=go-app /app/.env.app /app/.env
 COPY --from=go-app /app/view /app/view
+COPY --from=go-app /app/var/server.* /app/var/
 COPY --from=go-app /app/jirassic-park /app/jirassic-park
 
 # RUN apk add --no-cache

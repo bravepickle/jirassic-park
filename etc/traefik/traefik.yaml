@@ -1,0 +1,53 @@
+---
+# Docker configuration backend
+# see https://doc.traefik.io/traefik/providers/docker/ for options
+providers:
+    docker:
+        # if enabled container for Traefik and rule not specified then this one will be used
+        defaultRule: "Host(`{{ .Name }}`)"
+
+        # by default
+        exposedByDefault: false
+
+    file:
+        filename: /etc/traefik/dynamic.conf.yaml
+        watch: true
+
+# shows you a log msg if a newer image tag can be used
+global:
+  checkNewVersion: true
+
+# log default is ERROR
+log:
+  # level: WARN
+  level: INFO
+
+# enable access logs
+# by defaults
+#accessLog: {}
+# customized
+accessLog:
+   filePath: "/dev/stdout"
+#    filters:
+#        statusCodes:
+#            - "300-600"
+#        retryAttempts: true
+
+# API and dashboard configuration
+api:
+    insecure: true
+    dashboard: true
+
+# Configure available entry points and ports
+entryPoints:
+    web:
+        address: ':80'
+        http: # redirect all HTTP requests to HTTPS
+            redirections:
+                entryPoint:
+                    to: webSecured
+                    scheme: https
+                    permanent: false
+
+    webSecured:
+        address: ':443'
