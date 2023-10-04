@@ -11,7 +11,7 @@
 <div class="container">
     <h1>Welcome to home page!</h1>
 
-    <form action="/" name=f method="GET">
+    <form action="/action" name="main-form" id="main-form" method="POST">
         <div class="mb-3">
             <label class="form-label">URI:</label>
             <input class="form-control" type="url" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
@@ -23,15 +23,17 @@
         </div>
         <div class="mb-3">
             <label for="user" class="form-label">Username:</label>
-            <input class="form-control" type="url" id="user" name="user" autocomplete="no" value="{{ .user }}"/>
+            <input class="form-control" type="email" id="user" name="user" autocomplete="no" value="{{ .user }}"/>
         </div>
         <div class="mb-3">
             <label for="token" class="form-label">API token:</label>
             <input class="form-control" type="password" id="token" name="token" autocomplete="no" value="{{ .token }}"/>
             <div id="tokenHelpBlock" class="form-text">
-                Your API token generated in Atlassian profile
+                Your API token generated in Atlassian profile. Keep empty if user matches defaults
             </div>
         </div>
+
+        <input type="hidden" name="action" value="show" id="action">
 
         <input class="btn btn-secondary" id="list-filters-btn" value="List filters" name=show>
         <input class="btn btn-primary" type=submit value="Show task relations" name=show>
@@ -48,28 +50,37 @@
         let uriBaseEl = document.getElementById('uri');
         let userEl = document.getElementById('user');
         let tokenEl = document.getElementById('token');
+        let actionEl = document.getElementById('action');
 
         document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
+            // actionEl.value = 'list-filters';
+            // document.forms['main-form'].submit()
+
+            // TODO: remove axios if not used
             axios({
-                method: 'get',
-                url: _.trimEnd(uriBaseEl.value, '/') + '/filter/my',
-                auth: {
+                // method: 'get',
+                // url: _.trimEnd(uriBaseEl.value, '/') + '/filter/my',
+                method: 'post',
+                url: '/action',
+                data: {
+                    action: 'list-filters',
                     username: userEl.value,
                     password: tokenEl.value
-                },
-                withCredentials: true,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
+                }
+                // auth: {
+                //     username: userEl.value,
+                //     password: tokenEl.value
+                // },
+                // withCredentials: true,
+                // headers: {
+                //     'X-Requested-With': 'XMLHttpRequest',
+                // },
             })
             .then(function (response) {
                 console.info('response', response)
             });
-
-            // console.info('axios', axios)
         })
     })
-
 </script>
 </body>
 </html>

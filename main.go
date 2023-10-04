@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -38,14 +39,31 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 
 	// err = template.Execute(w, `This is test input!!!`)
 	err = template.Execute(w, map[string]string{
-		`user`:  os.Getenv(`APP_AUTH_USER`),
-		`token`: os.Getenv(`APP_AUTH_PASS`),
+		`user`: os.Getenv(`APP_AUTH_USER`),
+		// `token`: os.Getenv(`APP_AUTH_PASS`),
+		`token`: ``,
 		`uri`:   os.Getenv(`APP_JIRA_BASE_URI`),
 	})
 
 	if err != nil {
 		log.Fatal(`[ERROR] Failed to build page from the template: `, err)
 	}
+}
+
+func ActionPage(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	body, _ := ioutil.ReadAll(req.Body)
+
+	// jsonData, err := json.Marshal(body)
+	// if err != nil {
+	// 	log.Printf("Could not marshal json: %s\n", err)
+
+	// 	return
+	// }
+	// w.Write(jsonData)
+
+	// json.un
+	w.Write(body)
 }
 
 func main() {
@@ -97,6 +115,7 @@ func main() {
 	useTls = strings.ToLower(os.Getenv(`APP_SERVER_TLS`))
 
 	http.HandleFunc("/hello", HelloServer)
+	http.HandleFunc("/action", ActionPage)
 	http.HandleFunc("/", HomePage)
 
 	var err error
