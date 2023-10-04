@@ -13,3 +13,4 @@ Content-Length: 27
 # TODO
 - [ ] use TLS
 - [ ] helper to generate self-signed TLS certs
+- [ ] fix CORS problem or use OAuth

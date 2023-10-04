@@ -1,16 +1,75 @@
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-<title>QR Link Generator</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+    <title>JIRA tasks visualizer</title>
 </head>
 <body>
-<h1>Welcome to home page!</h1>
+<div class="container">
+    <h1>Welcome to home page!</h1>
 
-<form action="/" name=f method="GET">
-    <div><label>URI:</label> <input type="url" name="uri" autocomplete="no" value="{{ .uri }}"/></div>
-    <div><label for="user">Username:</label> <input type="url" id="user" name="user" autocomplete="no" value="{{ .user }}"/></div>
-    <div><label for="token">API token:</label> <input type="text" name="token" autocomplete="no" value=""/></div>
+    <form action="/" name=f method="GET">
+        <div class="mb-3">
+            <label class="form-label">URI:</label>
+            <input class="form-control" type="url" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
 
-    <input type=submit value="Show task relations" name=show>
-</form>
+            <div id="uriHelpBlock" class="form-text">
+                Your API URI entrypoint. More info can be found
+                <a href="https://developer.atlassian.com/server/jira/platform/rest-apis/" class="link-info" target="_blank">here</a>
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="user" class="form-label">Username:</label>
+            <input class="form-control" type="url" id="user" name="user" autocomplete="no" value="{{ .user }}"/>
+        </div>
+        <div class="mb-3">
+            <label for="token" class="form-label">API token:</label>
+            <input class="form-control" type="password" id="token" name="token" autocomplete="no" value="{{ .token }}"/>
+            <div id="tokenHelpBlock" class="form-text">
+                Your API token generated in Atlassian profile
+            </div>
+        </div>
+
+        <input class="btn btn-secondary" id="list-filters-btn" value="List filters" name=show>
+        <input class="btn btn-primary" type=submit value="Show task relations" name=show>
+    </form>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        let uriBaseEl = document.getElementById('uri');
+        let userEl = document.getElementById('user');
+        let tokenEl = document.getElementById('token');
+
+        document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
+            axios({
+                method: 'get',
+                url: _.trimEnd(uriBaseEl.value, '/') + '/filter/my',
+                auth: {
+                    username: userEl.value,
+                    password: tokenEl.value
+                },
+                withCredentials: true,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            })
+            .then(function (response) {
+                console.info('response', response)
+            });
+
+            // console.info('axios', axios)
+        })
+    })
+
+</script>
 </body>
 </html>

@@ -38,8 +38,9 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 
 	// err = template.Execute(w, `This is test input!!!`)
 	err = template.Execute(w, map[string]string{
-		`user`: os.Getenv(`APP_AUTH_USER`),
-		`uri`:  os.Getenv(`APP_JIRA_BASE_URI`),
+		`user`:  os.Getenv(`APP_AUTH_USER`),
+		`token`: os.Getenv(`APP_AUTH_PASS`),
+		`uri`:   os.Getenv(`APP_JIRA_BASE_URI`),
 	})
 
 	if err != nil {
