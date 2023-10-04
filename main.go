@@ -43,7 +43,7 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 		`user`: os.Getenv(`APP_AUTH_USER`),
 		// `token`: os.Getenv(`APP_AUTH_PASS`),
 		`token`: ``,
-		`uri`:   os.Getenv(`APP_JIRA_BASE_URI`),
+		`uri`:   os.Getenv(`APP_JIRA_PROXY_URI`),
 	})
 
 	if err != nil {
@@ -127,9 +127,9 @@ func main() {
 		log.Println("[INFO] ENV:\n" + strings.Join(os.Environ(), "\n"))
 	}
 
-	apiUri := os.Getenv(`APP_JIRA_BASE_URI`)
+	apiUri := os.Getenv(`APP_JIRA_PROXY_URI`)
 	if apiUri == `` {
-		log.Fatal(`[ERROR] APP_JIRA_BASE_URI is not defined`)
+		log.Fatal(`[ERROR] APP_JIRA_PROXY_URI is not defined`)
 
 		os.Exit(1)
 	}

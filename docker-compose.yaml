@@ -21,6 +21,8 @@ services:
             - "traefik.http.routers.app.rule=Host(`${APP_HOST}`, `localhost`) && PathPrefix(`/app`)"
             - "traefik.http.routers.app.entryPoints=webSecured"
             - "traefik.http.routers.app.middlewares=default-headers@file,app-prefix@file"
+        profiles:
+            - main
         logging:
             driver: "json-file"
             options:
@@ -41,7 +43,8 @@ services:
             - "./etc/traefik/dynamic.conf.yaml:/etc/traefik/dynamic.conf.yaml:ro"
             - "./var/server.crt:/etc/ssl/certs/server.crt:ro"
             - "./var/server.key:/etc/ssl/private/server.key:ro"
-
+        profiles:
+            - main
         logging:
             driver: "json-file"
             options:
@@ -52,6 +55,8 @@ services:
         image: traefik/whoami
         hostname: "${COMPOSE_PROJECT_NAME}-whoami"
         container_name: "${COMPOSE_PROJECT_NAME}_whoami"
+        profiles:
+            - debug
         depends_on:
             - proxy
         labels:

@@ -4,8 +4,7 @@ FROM golang:1-alpine3.17 AS go-app
 WORKDIR /app
 
 COPY . /app
-RUN apk add --no-cache sed \
-    && go mod vendor \
+RUN go mod vendor \
     && go mod vendor \
     && go build -o jirassic-park
 

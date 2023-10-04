@@ -39,12 +39,37 @@
 
                 <input type="hidden" name="action" value="show" id="action">
 
-                <input class="btn btn-secondary" id="list-filters-btn" value="List my filters" name=show>
-                <input class="btn btn-primary" type=submit value="Show task relations" name=show>
+                <div class="d-flex justify-content-between mt-5 mb-5">
+                    <div>
+                        <div class="btn-group" role="group" aria-label="Settings">
+                            <button type="button" class="btn btn-outline-primary" id="input-save-btn">Save</button>
+                            <button type="button" class="btn btn-outline-primary" id="input-restore-btn">Restore</button>
+                            <button type="button" class="btn btn-outline-primary" id="input-clear-btn">Clear</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <input class="btn btn-secondary" id="list-filters-btn" value="List filters" name=show>
+                        <input class="btn btn-primary" type=submit value="Show task relations" name=show>
+                    </div>
+                </div>
             </form>
         </div>
       </div>
 
+
+    <!-- Modal -->
+    <div class="modal fade" id="notifyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Notification</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
@@ -58,34 +83,82 @@
         let tokenEl = document.getElementById('token');
         let actionEl = document.getElementById('action');
 
-        document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
-            // actionEl.value = 'list-filters';
-            // document.forms['main-form'].submit()
+        let inputSaveEl = document.getElementById('input-save-btn');
+        let inputRestoreEl = document.getElementById('input-restore-btn');
+        let inputClearEl = document.getElementById('input-clear-btn');
 
-            // TODO: remove axios if not used
+        let notifyModalEl = document.getElementById('notifyModal');
+        let notifyModal = new bootstrap.Modal(notifyModalEl);
+
+        document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
             axios({
-                // method: 'get',
-                // url: _.trimEnd(uriBaseEl.value, '/') + '/filter/my',
-                method: 'post',
-                url: '/action',
-                data: {
-                    action: 'list-filters',
-                    username: userEl.value,
-                    password: tokenEl.value
-                }
-                // auth: {
+                method: 'get',
+                url: _.trimEnd(uriBaseEl.value, '/') + '/filter/my',
+                // method: 'post',
+                // url: '/action',
+                // data: {
+                //     action: 'list-filters',
                 //     username: userEl.value,
                 //     password: tokenEl.value
-                // },
-                // withCredentials: true,
-                // headers: {
-                //     'X-Requested-With': 'XMLHttpRequest',
-                // },
+                // }
+                auth: {
+                    username: userEl.value,
+                    password: tokenEl.value
+                },
+                withCredentials: true,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
             })
             .then(function (response) {
                 console.info('response', response)
             });
         })
+
+        inputSaveEl.addEventListener('click', () => saveInput());
+        inputRestoreEl.addEventListener('click', () => restoreInput());
+        inputClearEl.addEventListener('click', () => clearInput());
+
+        function notify(message) {
+            notifyModalEl.querySelector('.modal-body').innerText = message
+            notifyModal.show();
+        }
+
+        function saveInput() {
+            let data = {uri: uriBaseEl.value, user: userEl.value, token: tokenEl.value};
+            console.log('data', data);
+
+            localStorage.setItem('input', JSON.stringify(data));
+
+            notify('Form input is stored!')
+        }
+
+        function restoreInput() {
+            let input = localStorage.getItem('input');
+
+            if (!input) {
+                notify('Storage is empty');
+
+                return;
+            }
+
+            input = JSON.parse(input)
+
+            uriBaseEl.value = input.uri
+            userEl.value = input.user
+            tokenEl.value = input.token
+        }
+
+        function clearInput() {
+            localStorage.clear();
+
+            uriBaseEl.value = '{{ .uri }}'
+            userEl.value = '{{ .user }}'
+            tokenEl.value = '{{ .token }}'
+
+            notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
+            notifyModal.show();
+        }
     })
 </script>
 </body>
