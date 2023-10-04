@@ -9,35 +9,41 @@
 </head>
 <body>
 <div class="container">
+
     <h1>Welcome to home page!</h1>
 
-    <form action="/action" name="main-form" id="main-form" method="POST">
-        <div class="mb-3">
-            <label class="form-label">URI:</label>
-            <input class="form-control" type="url" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
+    <div class="card">
+        <div class="card-body">
+            <h3 class="card-title">API settings</h3>
+            <form action="/action" name="main-form" id="main-form" method="POST">
+                <div class="mb-3">
+                    <label class="form-label">URI:</label>
+                    <input class="form-control" type="url" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
 
-            <div id="uriHelpBlock" class="form-text">
-                Your API URI entrypoint. More info can be found
-                <a href="https://developer.atlassian.com/server/jira/platform/rest-apis/" class="link-info" target="_blank">here</a>
-            </div>
-        </div>
-        <div class="mb-3">
-            <label for="user" class="form-label">Username:</label>
-            <input class="form-control" type="email" id="user" name="user" autocomplete="no" value="{{ .user }}"/>
-        </div>
-        <div class="mb-3">
-            <label for="token" class="form-label">API token:</label>
-            <input class="form-control" type="password" id="token" name="token" autocomplete="no" value="{{ .token }}"/>
-            <div id="tokenHelpBlock" class="form-text">
-                Your API token generated in Atlassian profile. Keep empty if user matches defaults
-            </div>
-        </div>
+                    <div id="uriHelpBlock" class="form-text">
+                        Your API URI entrypoint. More info can be found
+                        <a href="https://developer.atlassian.com/server/jira/platform/rest-apis/" class="link-info" target="_blank">here</a>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="user" class="form-label">Username:</label>
+                    <input class="form-control" type="email" id="user" name="user" autocomplete="no" value="{{ .user }}"/>
+                </div>
+                <div class="mb-3">
+                    <label for="token" class="form-label">API token:</label>
+                    <input class="form-control" type="password" id="token" name="token" autocomplete="no" value="{{ .token }}"/>
+                    <div id="tokenHelpBlock" class="form-text">
+                        Your API token generated in Atlassian profile. Keep empty if user matches defaults
+                    </div>
+                </div>
 
-        <input type="hidden" name="action" value="show" id="action">
+                <input type="hidden" name="action" value="show" id="action">
 
-        <input class="btn btn-secondary" id="list-filters-btn" value="List filters" name=show>
-        <input class="btn btn-primary" type=submit value="Show task relations" name=show>
-    </form>
+                <input class="btn btn-secondary" id="list-filters-btn" value="List my filters" name=show>
+                <input class="btn btn-primary" type=submit value="Show task relations" name=show>
+            </form>
+        </div>
+      </div>
 
 </div>
 

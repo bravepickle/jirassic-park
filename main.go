@@ -74,6 +74,32 @@ func ActionPage(w http.ResponseWriter, req *http.Request) {
 	// TODO: list filters handle
 }
 
+func makeGetRequest(uri string) ([]byte, error) {
+	req, err := http.NewRequest(`GET`, uri, nil)
+	// res, err := http.Get(uri)
+	if err != nil {
+		if debug {
+			log.Printf("[INFO] Error making http request: %s\n", err)
+		}
+
+		return nil, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		if debug {
+			log.Printf("[INFO] Client: error making http request: %s\n", err)
+		}
+
+		return nil, err
+	}
+
+	log.Printf("[INFO] client: got response!\n")
+	log.Printf("[INFO] client: status code: %d\n", res.StatusCode)
+
+	return ioutil.ReadAll(res.Body)
+}
+
 func main() {
 	var envFile string
 
