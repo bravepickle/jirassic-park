@@ -72,7 +72,7 @@
         <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle output</a>
     </div>
 
-    <div id="output" hidden class="mt-5">
+    <div id="output" hidden class="mt-5 mb-5">
         <h3 class="mb-3">Output</h3>
     </div>
 
@@ -356,11 +356,15 @@
 
                 let title = makeTitle(item);
                 out.push(`    ${item.key}("${title}")`);
+                out.push(`    click ${item.key} href "${makeIssueHref(item)}" _blank`);
+                out.push(''); // separator
+
+                // click C href "https://www.github.com" _blank
                 // out.push(`    ${item.key}("\`${title}\`")`);
                 issueKeys.push(item.key);
             };
 
-            // TODO: addParentRef
+            // TODO: add parent issues
 
             let refKeys = [];
             let addRefIssue = function (type, from, to) {
@@ -393,7 +397,6 @@
                         out.push(`    ${from.key} -- relates --- ${to.key}`);
                         break;
                     default:
-                        // out.push(`    ${from.key} x-- ${type.dir} --x ${to.key}`);
                         out.push(`    ${from.key} o-- ${type.dir} --o ${to.key}`);
                 }
 
@@ -413,16 +416,17 @@
                 console.info('[refs]', refKeys);
             };
 
+            // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
+
             issues.forEach(function (item) {
                 addIssueDesc(item);
 
                 if (item.fields.parent) {
+                    addIssueDesc(item.fields.parent);
+
                     addRefIssue({name: 'Parent', dir: 'parent'}, item, item.fields.parent);
                 }
 
-                // let linksEl = el.querySelector('.issue-links');
-
-                // let linksCount = 0;
                 if (item.fields.issuelinks && item.fields.issuelinks.length > 0) {
                     item.fields.issuelinks.forEach(function (ref) {
                         let issue;
@@ -440,34 +444,11 @@
                             return; // if references parent issue then skip
                         }
 
-                        addRefIssue({name: ref.name, dir: refType}, item, issue);
+                        addIssueDesc(issue);
 
-                        // let itemEl = issueTplEl.content.cloneNode(true);
-
-
-                        // itemEl.querySelector('.issue-label').innerText = refType;
-
-                        // let linkEl = itemEl.querySelector('.issue-ref');
-                        // linkEl.innerText = makeTitle(issue);
-                        // linkEl.href = makeIssueHref(issue);
-
-                        // linksEl.appendChild(itemEl);
-                        // linksCount += 1;
+                        addRefIssue({name: ref.type.name, dir: refType}, item, issue);
                     });
                 }
-
-                // if (linksCount === 0) {
-                //     linksEl.parentNode.removeChild(linksEl);
-
-                //     let refHeaderEl = el.querySelector('.issue-ref-header');
-                //     refHeaderEl.parentNode.removeChild(refHeaderEl);
-                // }
-
-
-                // outEl.appendChild(el.firstElementChild)
-
-
-
             });
 
             console.info('[Diagram] ', out.join("\n"));
