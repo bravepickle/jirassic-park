@@ -103,6 +103,24 @@
             </div>
         </div>
     </template>
+
+    <template id="issue-tpl">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"></h5>
+                <div class="card-text bg-light text-secondary p-3 mb-3 issue-desc"></div>
+                <a href="#" target="_blank" class="card-link issue-self">View Issue</a>
+                <a href="#" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" class="card-link issue-parent">Parent Issue</a>
+
+                <div class="card-header mt-3 issue-ref-header">Relations</div>
+                <ul class="list-group list-group-flush issue-links"></ul>
+            </div>
+        </div>
+    </template>
+
+    <template id="issue-link-tpl">
+        <li class="list-group-item"><span class="issue-label"></span> <a href="#" target="_blank" class="card-link issue-ref"></a></li>
+    </template>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
@@ -111,6 +129,8 @@
 
 <script>
     (function() {
+        let jiraUri = '{{ .jira_uri }}';
+
         document.addEventListener('DOMContentLoaded', function () {
             let uriBaseEl = document.getElementById('uri');
             let userEl = document.getElementById('user');
@@ -180,7 +200,7 @@
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                 })
-                .then((response) => console.log(response))
+                .then((response) => showIssues(response.data))
                 .catch(function (e) {
                     console.error(e);
                     notify('[ERROR] ' + e.message);
@@ -205,11 +225,13 @@
                 notify('Form input is stored!')
             }
 
-            function restoreInput() {
+            function restoreInput(silent) {
                 let input = localStorage.getItem('input');
 
                 if (!input) {
-                    notify('Storage is empty');
+                    if (typeof silent === 'undefined' || !silent) {
+                        notify('Storage is empty');
+                    }
 
                     return;
                 }
@@ -233,12 +255,16 @@
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
             }
-        })
+
+            restoreInput(true);
+        });
 
 
         function showFilters(data) {
             let outEl = document.getElementById('output');
             let tplEl = document.getElementById('filter-tpl')
+
+            outEl.innerHTML = '';
 
             data.forEach(function (item) {
                 let el = tplEl.content.cloneNode(true)
@@ -250,6 +276,93 @@
                 el.querySelector('.filter-issues').href = item.viewUrl;
 
                 outEl.appendChild(el.firstElementChild)
+            });
+
+            outEl.hidden = false
+        }
+
+        function makeTitle(issue) {
+            return '[' + _.get(issue, 'fields.issuetype.name') + ' | ' +
+                _.get(issue, 'fields.status.name') + ' | ' +
+                issue.key  + '] ' +
+                _.get(issue, 'fields.summary');
+        }
+
+        function makeIssueHref(issue) {
+            return jiraUri + '/browse/' + issue.key;
+        }
+
+        function showIssues(data) {
+            let outEl = document.getElementById('output');
+            let tplEl = document.getElementById('issue-tpl')
+            let issueTplEl = document.getElementById('issue-link-tpl')
+
+            outEl.innerHTML = ''; // clear input
+
+            data.issues.forEach(function (item) {
+                let el = tplEl.content.cloneNode(true)
+                // el.querySelector('.card-title').innerText = '[' + item.key + '] ' + item.fields.summary;
+                el.querySelector('.card-title').innerText = makeTitle(item);
+                el.querySelector('.issue-desc').innerText = _.truncate(item.fields.description, {length: 300});
+
+                el.querySelector('.issue-self').href = makeIssueHref(item);
+
+                let parentEl = el.querySelector('.issue-parent');
+                if (!item.fields.parent) {
+                    parentEl.parentNode.removeChild(parentEl);
+                } else {
+                    let parentInfo = item.fields.parent;
+                    parentEl.href = makeIssueHref(parentInfo);
+                    parentEl.title = makeTitle(parentInfo)
+                }
+
+                let linksEl = el.querySelector('.issue-links');
+
+                let linksCount = 0;
+                if (item.fields.issuelinks && item.fields.issuelinks.length > 0) {
+                    item.fields.issuelinks.forEach(function (ref) {
+                        let issue;
+                        let refType;
+
+                        if (ref.outwardIssue) {
+                            issue = ref.outwardIssue;
+                            refType = ref.type.outward;
+                        } else {
+                            issue = ref.inwardIssue;
+                            refType = ref.type.inward;
+                        }
+
+                        if (_.get(item, 'fields.parent.id') === issue.id) {
+                            return; // if references parent issue then skip
+                        }
+
+                        let itemEl = issueTplEl.content.cloneNode(true);
+
+
+                        itemEl.querySelector('.issue-label').innerText = refType;
+
+                        let linkEl = itemEl.querySelector('.issue-ref');
+                        linkEl.innerText = makeTitle(issue);
+                        linkEl.href = makeIssueHref(issue);
+
+                        linksEl.appendChild(itemEl);
+                        linksCount += 1;
+                    });
+                }
+
+                if (linksCount === 0) {
+                    linksEl.parentNode.removeChild(linksEl);
+
+                    let refHeaderEl = el.querySelector('.issue-ref-header');
+                    refHeaderEl.parentNode.removeChild(refHeaderEl);
+                }
+
+
+                outEl.appendChild(el.firstElementChild)
+
+                // if (!item.fields.parent) {
+                //     new bootstrap.Tooltip(parentEl);
+                // }
             });
 
             outEl.hidden = false

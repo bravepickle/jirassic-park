@@ -34,4 +34,7 @@ COPY --from=go-app /app/jirassic-park /app/jirassic-park
 
 VOLUME /app
 
+EXPOSE 80
+EXPOSE 443
+
 CMD [ "/app/jirassic-park", "--env .env"]
