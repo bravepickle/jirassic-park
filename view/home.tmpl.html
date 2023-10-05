@@ -60,7 +60,8 @@
 
                     <div>
                         <input class="btn btn-secondary mr-2" id="list-filters-btn" value="List filters" name=show>
-                        <input class="btn btn-primary" type=button value="Show task relations" name=show id="show-tasks-btn">
+                        <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
+                        <input class="btn btn-primary" type=button value="Show diagram" name=show id="show-diagram-btn">
                     </div>
                 </div>
             </form>
@@ -68,7 +69,7 @@
       </div>
 
     <div class="pt-5 pb-3">
-        <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle filters</a>
+        <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle output</a>
     </div>
 
     <div id="output" hidden class="mt-5">
@@ -121,17 +122,32 @@
     <template id="issue-link-tpl">
         <li class="list-group-item"><span class="issue-label"></span> <a href="#" target="_blank" class="card-link issue-ref"></a></li>
     </template>
+
+    <!-- Diagram Workflow Mermaid -->
+    <template id="mermaid-tpl">
+        <pre class="mermaid" id="mermaid">
+            graph LR
+            A --- B
+            B-->C[fa:fa-ban forbidden]
+            B-->D(fa:fa-spinner);
+        </pre>
+    </template>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.5.0/dist/mermaid.min.js"></script>
 
 <script>
     (function() {
         let jiraUri = '{{ .jira_uri }}';
+        // mermaid.initialize();
 
         document.addEventListener('DOMContentLoaded', function () {
+            mermaid.initialize({ startOnLoad: false });
+
             let uriBaseEl = document.getElementById('uri');
             let userEl = document.getElementById('user');
             let tokenEl = document.getElementById('token');
@@ -211,6 +227,36 @@
             inputRestoreEl.addEventListener('click', () => restoreInput());
             inputClearEl.addEventListener('click', () => clearInput());
 
+
+            document.getElementById('show-diagram-btn').addEventListener('click', function onShowDiagram() {
+                let jqlQuery = _.trim(filterEl.value)
+
+                if (!userEl.value || !tokenEl.value || !jqlQuery) {
+                    notify('[ERROR] Input values are not defined')
+
+                    return;
+                }
+
+                axios({
+                    method: 'get',
+                    url: _.trimEnd(uriBaseEl.value, '/') + '/search',
+                    params: {jql: jqlQuery},
+                    auth: {
+                        username: userEl.value,
+                        password: tokenEl.value
+                    },
+                    withCredentials: true,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                .then((response) => showDiagram(response.data))
+                .catch(function (e) {
+                    console.error(e);
+                    notify('[ERROR] ' + e.message);
+                });
+            });
+
             function notify(message) {
                 notifyModalEl.querySelector('.modal-body').innerText = message
                 notifyModal.show();
@@ -259,10 +305,180 @@
             restoreInput(true);
         });
 
+        function showDiagram(data) {
+            if (data.total >= data.maxResults) {
+                notify('Reached page items limit. Update JQL query if possible');
+            }
+
+            let outEl = document.getElementById('output');
+            let tplEl = document.getElementById('mermaid-tpl');
+
+            outEl.innerHTML = '';
+
+            let el = tplEl.content.cloneNode(true);
+
+            console.info('[before] ', el.innerHTML, outEl);
+
+            // el.firstElementChild.innerHTML = makeDiagram(data.issues)
+            // el.firstElementChild.innerHTML = '';
+            outEl.appendChild(el.firstElementChild);
+            outEl.hidden = false;
+
+            console.info('[one more] ', outEl.innerHTML, el);
+
+
+            // mermaid.run();
+
+            // mermaid.render('mermaid', 'flowchart TB\na-->b').then((v) => {
+            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
+            mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
+                console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
+                outEl.innerHTML = v.svg;
+            });
+            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => console.log('[render] ', v));
+            // mermaid.run();
+
+            console.info('[after] ', outEl.innerHTML);
+        }
+
+        function makeDiagram(issues) {
+            let out = [
+`flowchart LR`
+            ];
+            let issueKeys = [];
+
+            let addIssueDesc = function (item) {
+                if (issueKeys.indexOf(item.key) !== -1) {
+                    return; // already added
+                }
+
+                item.fields.summary = item.fields.summary.replaceAll('"', '');
+
+                let title = makeTitle(item);
+                out.push(`    ${item.key}("${title}")`);
+                // out.push(`    ${item.key}("\`${title}\`")`);
+                issueKeys.push(item.key);
+            };
+
+            // TODO: addParentRef
+
+            let refKeys = [];
+            let addRefIssue = function (type, from, to) {
+// return;
+
+                let key = type.name + '.' + _.sortBy([from.key, to.key]).join('.');
+                if (refKeys.indexOf(key) !== -1) {
+                    return; // already added
+                }
+
+                switch (type.name) {
+                    case 'Parent':
+                        out.push(`    ${from.key} -. parent .-> ${to.key}`);
+                        break;
+                    case 'Blocks':
+                        if (type.desc === 'blocks') {
+                            out.push(`    ${from.key} -- blocks --> ${to.key}`);
+                        } else {
+                            out.push(`    ${to.key} -- blocks --> ${from.key}`);
+                        }
+                        break;
+                    case 'Cloners':
+                        if (type.desc === 'clones') {
+                            out.push(`    ${from.key} -- clones --> ${to.key}`);
+                        } else {
+                            out.push(`    ${to.key} -- clones --> ${from.key}`);
+                        }
+                        break;
+                    case 'Relates':
+                        out.push(`    ${from.key} -- relates --- ${to.key}`);
+                        break;
+                    default:
+                        // out.push(`    ${from.key} x-- ${type.dir} --x ${to.key}`);
+                        out.push(`    ${from.key} o-- ${type.dir} --o ${to.key}`);
+                }
+
+                // if (type.name === 'Parent') {
+                //     // A-. text .-> B
+                //     // out.push(`    ${from.key}-.-> ${to.key}`);
+                //     out.push(`    ${from.key}-. "${type.name}" .-> ${to.key}`);
+                // } else if (type.name === 'Blocks') {
+
+                // } else if (type.name ==) {
+
+                // }
+
+                // out.push(`    ${item.key}("${item.fields.summary.replaceAll('"', '')}")`);
+                // issueKeys.push(key);
+
+                console.info('[refs]', refKeys);
+            };
+
+            issues.forEach(function (item) {
+                addIssueDesc(item);
+
+                if (item.fields.parent) {
+                    addRefIssue({name: 'Parent', dir: 'parent'}, item, item.fields.parent);
+                }
+
+                // let linksEl = el.querySelector('.issue-links');
+
+                // let linksCount = 0;
+                if (item.fields.issuelinks && item.fields.issuelinks.length > 0) {
+                    item.fields.issuelinks.forEach(function (ref) {
+                        let issue;
+                        let refType;
+
+                        if (ref.outwardIssue) {
+                            issue = ref.outwardIssue;
+                            refType = ref.type.outward;
+                        } else {
+                            issue = ref.inwardIssue;
+                            refType = ref.type.inward;
+                        }
+
+                        if (_.get(item, 'fields.parent.id') === issue.id) {
+                            return; // if references parent issue then skip
+                        }
+
+                        addRefIssue({name: ref.name, dir: refType}, item, issue);
+
+                        // let itemEl = issueTplEl.content.cloneNode(true);
+
+
+                        // itemEl.querySelector('.issue-label').innerText = refType;
+
+                        // let linkEl = itemEl.querySelector('.issue-ref');
+                        // linkEl.innerText = makeTitle(issue);
+                        // linkEl.href = makeIssueHref(issue);
+
+                        // linksEl.appendChild(itemEl);
+                        // linksCount += 1;
+                    });
+                }
+
+                // if (linksCount === 0) {
+                //     linksEl.parentNode.removeChild(linksEl);
+
+                //     let refHeaderEl = el.querySelector('.issue-ref-header');
+                //     refHeaderEl.parentNode.removeChild(refHeaderEl);
+                // }
+
+
+                // outEl.appendChild(el.firstElementChild)
+
+
+
+            });
+
+            console.info('[Diagram] ', out.join("\n"));
+
+            return out.join("\n");
+        }
+
 
         function showFilters(data) {
             let outEl = document.getElementById('output');
-            let tplEl = document.getElementById('filter-tpl')
+            let tplEl = document.getElementById('filter-tpl');
 
             outEl.innerHTML = '';
 
