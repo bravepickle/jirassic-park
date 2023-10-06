@@ -47,11 +47,15 @@
                     </div>
                 </div>
 
-
                 <div class="mb-3">
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="hide-parents">
-                        <label class="form-check-label" for="hide-parents">Hide parent issues</label>
+                        <label class="form-check-label" for="hide-parents">Hide parent references</label>
+                    </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="hide-tests">
+                        <label class="form-check-label" for="hide-tests">Hide test references</label>
                     </div>
                 </div>
 
@@ -162,6 +166,7 @@
             let actionEl = document.getElementById('action');
             let filterEl = document.getElementById('filter');
             let hideParentsBtn = document.getElementById('hide-parents');
+            let hideTestsBtn = document.getElementById('hide-tests');
 
             let inputSaveEl = document.getElementById('input-save-btn');
             let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -278,6 +283,7 @@
                     token: tokenEl.value,
                     filter: filterEl.value,
                     hideParents: hideParentsBtn.checked,
+                    hideTests: hideTestsBtn.checked,
                 };
                 console.log('data', data);
 
@@ -304,6 +310,7 @@
                 tokenEl.value = input.token
                 filterEl.value = input.filter
                 hideParentsBtn.checked = !!input.hideParents;
+                hideTestsBtn.checked = !!input.hideTests;
             }
 
             function clearInput() {
@@ -314,6 +321,7 @@
                 tokenEl.value = '{{ .token }}'
                 filterEl.value = ''
                 hideParentsBtn.checked = false;
+                hideTestsBtn.checked = false;
 
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
@@ -360,6 +368,7 @@
 
         function makeDiagram(issues) {
             let hideParentsBtn = document.getElementById('hide-parents');
+            let hideTestsBtn = document.getElementById('hide-tests');
             let out = [
 `flowchart LR`
             ];
@@ -387,6 +396,9 @@
             let refKeys = [];
             let addRefIssue = function (type, from, to) {
 // return;
+                if (hideTestsBtn.checked && ( _.get(from, 'fields.issuetype.name') === 'Test' || _.get(to, 'fields.issuetype.name') === 'Test')) {
+                    return; // skip test issue refs from display
+                }
 
                 let key = type.name + '.' + _.sortBy([from.key, to.key]).join('.');
                 if (refKeys.indexOf(key) !== -1) {
@@ -457,7 +469,9 @@
                 addIssueDesc(item);
 
                 if (item.fields.parent && !hideParentsBtn.checked) {
-                    addIssueDesc(item.fields.parent);
+                    if (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
+                        addIssueDesc(item.fields.parent);
+                    }
 
                     addRefIssue({name: 'Parent', dir: 'parent'}, item, item.fields.parent);
                 }
@@ -479,7 +493,10 @@
                             return; // if references parent issue then skip
                         }
 
-                        addIssueDesc(issue);
+
+                        if (!hideTestsBtn.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
+                            addIssueDesc(issue);
+                        }
 
                         addRefIssue({name: ref.type.name, dir: refType}, item, issue);
                     });
