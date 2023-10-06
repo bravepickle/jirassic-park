@@ -47,6 +47,14 @@
                     </div>
                 </div>
 
+
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="hide-parents">
+                        <label class="form-check-label" for="hide-parents">Hide parent issues</label>
+                    </div>
+                </div>
+
                 <input type="hidden" name="action" value="show" id="action">
 
                 <div class="d-flex justify-content-between mt-5 mb-5">
@@ -153,6 +161,7 @@
             let tokenEl = document.getElementById('token');
             let actionEl = document.getElementById('action');
             let filterEl = document.getElementById('filter');
+            let hideParentsBtn = document.getElementById('hide-parents');
 
             let inputSaveEl = document.getElementById('input-save-btn');
             let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -263,7 +272,13 @@
             }
 
             function saveInput() {
-                let data = {uri: uriBaseEl.value, user: userEl.value, token: tokenEl.value, filter: filterEl.value};
+                let data = {
+                    uri: uriBaseEl.value,
+                    user: userEl.value,
+                    token: tokenEl.value,
+                    filter: filterEl.value,
+                    hideParents: hideParentsBtn.checked,
+                };
                 console.log('data', data);
 
                 localStorage.setItem('input', JSON.stringify(data));
@@ -288,6 +303,7 @@
                 userEl.value = input.user
                 tokenEl.value = input.token
                 filterEl.value = input.filter
+                hideParentsBtn.checked = !!input.hideParents;
             }
 
             function clearInput() {
@@ -297,6 +313,7 @@
                 userEl.value = '{{ .user }}'
                 tokenEl.value = '{{ .token }}'
                 filterEl.value = ''
+                hideParentsBtn.checked = false;
 
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
@@ -342,6 +359,7 @@
         }
 
         function makeDiagram(issues) {
+            let hideParentsBtn = document.getElementById('hide-parents');
             let out = [
 `flowchart LR`
             ];
@@ -406,39 +424,39 @@
             // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
             // TODO: toggle parent issues & grouping
 
-            let parentMap = {};
-            let issueMap = {};
-            issues.forEach(function (item) {
-                issueMap[item.key] = item;
+            // let parentMap = {};
+            // let issueMap = {};
+            // issues.forEach(function (item) {
+            //     issueMap[item.key] = item;
 
-                if (item.fields.parent) {
-                    issueMap[item.key] = item.fields.parent;
+            //     if (item.fields.parent) {
+            //         issueMap[item.key] = item.fields.parent;
 
-                    if (_.get(item.fields.parent, 'fields.issuetype.name') === 'Epic') {
-                        return; // consider epics as tasks without parent
-                    }
+            //         if (_.get(item.fields.parent, 'fields.issuetype.name') === 'Epic') {
+            //             return; // consider epics as tasks without parent
+            //         }
 
-                    if (!parentMap[item.fields.parent.key]) {
-                        parentMap[item.fields.parent.key] = [];
-                    }
+            //         if (!parentMap[item.fields.parent.key]) {
+            //             parentMap[item.fields.parent.key] = [];
+            //         }
 
-                    parentMap[item.fields.parent.key].push(item.key);
+            //         parentMap[item.fields.parent.key].push(item.key);
 
-                    item.fields.issuelinks.forEach(function (ref) {
-                        // todo: issue map
-                    });
-                }
-            });
+            //         item.fields.issuelinks.forEach(function (ref) {
+            //             // todo: issue map
+            //         });
+            //     }
+            // });
 
-            console.info('[parentMap]', parentMap);
-            console.info('[issueMap]', issueMap);
+            // console.info('[parentMap]', parentMap);
+            // console.info('[issueMap]', issueMap);
 
 
 
             issues.forEach(function (item) {
                 addIssueDesc(item);
 
-                if (item.fields.parent) {
+                if (item.fields.parent && !hideParentsBtn.checked) {
                     addIssueDesc(item.fields.parent);
 
                     addRefIssue({name: 'Parent', dir: 'parent'}, item, item.fields.parent);
