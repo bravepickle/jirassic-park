@@ -15,6 +15,8 @@ import (
 )
 
 var debug bool
+var useTls bool
+var publicUri string
 
 func HelloServer(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain")
@@ -23,6 +25,29 @@ func HelloServer(w http.ResponseWriter, req *http.Request) {
 
 func HomePage(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
+
+	var origin string
+
+	if os.Getenv(`APP_PUBLIC_URI`) != `` {
+		origin = os.Getenv(`APP_PUBLIC_URI`)
+	} else { // try guessing
+		if useTls {
+			origin = `https://`
+		} else {
+			origin = `http://`
+		}
+
+		origin += os.Getenv(`APP_HOST`)
+
+		// addr := string(os.Getenv(`APP_SERVER_ADDR`))
+		parts := strings.Split(os.Getenv(`APP_SERVER_ADDR`), `:`)
+
+		if parts[1] != `80` && parts[1] != `443` {
+			origin += `:` + parts[1]
+		}
+	}
+
+	w.Header().Set("access-control-allow-origin", origin)
 
 	filename := `home.tmpl.html`
 	filepath := `view/` + filename
@@ -42,8 +67,8 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 	err = template.Execute(w, map[string]string{
 		`user`: os.Getenv(`APP_AUTH_USER`),
 		// `token`: os.Getenv(`APP_AUTH_PASS`),
-		`token`: ``,
-		`uri`: os.Getenv(`APP_JIRA_PROXY_URI`),
+		`token`:    ``,
+		`uri`:      os.Getenv(`APP_JIRA_PROXY_URI`),
 		`jira_uri`: os.Getenv(`APP_JIRA_BASE_URI`),
 	})
 
@@ -148,19 +173,40 @@ func main() {
 		os.Exit(1)
 	}
 
-	if debug {
-		log.Println(`[INFO] Starting in Debug mode server`, serverAddr)
+	if os.Getenv(`APP_PUBLIC_URI`) != `` {
+		publicUri = os.Getenv(`APP_PUBLIC_URI`)
+	} else { // try guessing
+		if useTls {
+			publicUri = `https://`
+		} else {
+			publicUri = `http://`
+		}
+
+		publicUri += os.Getenv(`APP_HOST`)
+
+		parts := strings.Split(os.Getenv(`APP_SERVER_ADDR`), `:`)
+
+		if parts[1] != `80` && parts[1] != `443` {
+			publicUri += `:` + parts[1]
+		}
+
+		// publicUri += os.Getenv(`APP_PUBLIC_URI_PREFIX`)
 	}
 
-	var useTls string
-	useTls = strings.ToLower(os.Getenv(`APP_SERVER_TLS`))
+	if debug {
+		log.Println(`[INFO] Starting in Debug mode server`, serverAddr)
+		log.Println(`[INFO] Site is available at:`, publicUri)
+	}
+
+	var tlsValue string
+	tlsValue = strings.ToLower(os.Getenv(`APP_SERVER_TLS`))
 
 	http.HandleFunc("/hello", HelloServer)
 	http.HandleFunc("/action", ActionPage)
 	http.HandleFunc("/", HomePage)
 
 	var err error
-	if useTls == `true` || useTls == `1` {
+	if tlsValue == `true` || tlsValue == `1` {
 		if os.Getenv(`APP_SERVER_TLS_CERT`) == `` {
 			log.Fatal(`[ERROR] ENV param must be defined: APP_SERVER_TLS_CERT`)
 
@@ -174,8 +220,10 @@ func main() {
 		}
 
 		err = http.ListenAndServeTLS(serverAddr, os.Getenv(`APP_SERVER_TLS_CERT`), os.Getenv(`APP_SERVER_TLS_KEY`), nil)
+		useTls = true
 	} else {
 		err = http.ListenAndServe(serverAddr, nil)
+		useTls = false
 	}
 
 	if err != nil {

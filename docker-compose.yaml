@@ -16,11 +16,25 @@ services:
         labels:
             - "traefik.enable=true"
 
+            # Middleware CORS headers - more dynamic ones than the rest
+            - "traefik.http.middlewares.web-cors.headers.accessControlAllowMethods=GET,OPTIONS,PUT,DELETE,POST"
+            - "traefik.http.middlewares.web-cors.headers.accessControlAllowOriginList=*"
+            # - "traefik.http.middlewares.web-cors.headers.accessControlAllowOriginList=https://${APP_HOST},https://localhost,https://127.0.0.1,https://${APP_HOST}:9443,https://localhost:9443,https://127.0.0.1:9443"
+            - "traefik.http.middlewares.web-cors.headers.accessControlMaxAge=100"
+            - "traefik.http.middlewares.web-cors.headers.accessControlAllowCredentials=true"
+            - "traefik.http.middlewares.web-cors.headers.accessControlExposeHeaders=*"
+            - "traefik.http.middlewares.web-cors.headers.accessControlAllowHeaders=*"
+            - "traefik.http.middlewares.web-cors.headers.addVaryHeader=true"
+            # - "traefik.http.middlewares.web-cors.headers.allowedHosts=${APP_HOST},localhost,127.0.0.1"
+
             # Routers
             - "traefik.http.routers.app.tls=true"
-            - "traefik.http.routers.app.rule=Host(`${APP_HOST}`, `localhost`) && PathPrefix(`/app`)"
             - "traefik.http.routers.app.entryPoints=webSecured"
-            - "traefik.http.routers.app.middlewares=default-headers@file,app-prefix@file"
+            - "traefik.http.routers.app.rule=Host(`${APP_HOST}`, `localhost`)"
+            # - "traefik.http.routers.app.rule=Host(`${APP_HOST}`, `localhost`) && PathPrefix(`/app`)"
+            # - "traefik.http.routers.app.middlewares=default-headers@file,app-prefix@file,web-cors@docker"
+            # - "traefik.http.routers.app.middlewares=default-headers@file,web-cors@docker"
+            - "traefik.http.routers.app.middlewares=default-headers@file,web-cors@docker"
         profiles:
             - main
         logging:

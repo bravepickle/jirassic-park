@@ -5,7 +5,6 @@ WORKDIR /app
 
 COPY . /app
 RUN go mod vendor \
-    && go mod vendor \
     && go build -o jirassic-park
 
 # =========
@@ -37,4 +36,4 @@ VOLUME /app
 EXPOSE 80
 EXPOSE 443
 
-CMD [ "/app/jirassic-park", "--env .env"]
+CMD [ "/app/jirassic-park", "--env .env", "--debug"]

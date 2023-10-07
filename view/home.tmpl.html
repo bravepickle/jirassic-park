@@ -74,6 +74,8 @@
                         <input class="btn btn-secondary mr-2" id="list-filters-btn" value="List filters" name=show>
                         <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
                         <input class="btn btn-primary" type=button value="Show diagram" name=show id="show-diagram-btn">
+
+                        <input class="btn btn-primary" type=button value="Download PNG" name=show id="download-diagram-png-btn">
                     </div>
                 </div>
             </form>
@@ -157,23 +159,23 @@
         let jiraUri = '{{ .jira_uri }}';
         // mermaid.initialize();
 
+        let uriBaseEl = document.getElementById('uri');
+        let userEl = document.getElementById('user');
+        let tokenEl = document.getElementById('token');
+        let actionEl = document.getElementById('action');
+        let filterEl = document.getElementById('filter');
+        let hideParentsBtn = document.getElementById('hide-parents');
+        let hideTestsBtn = document.getElementById('hide-tests');
+
+        let inputSaveEl = document.getElementById('input-save-btn');
+        let inputRestoreEl = document.getElementById('input-restore-btn');
+        let inputClearEl = document.getElementById('input-clear-btn');
+
+        let notifyModalEl = document.getElementById('notifyModal');
+        let notifyModal = new bootstrap.Modal(notifyModalEl);
+
         document.addEventListener('DOMContentLoaded', function () {
             mermaid.initialize({ startOnLoad: false });
-
-            let uriBaseEl = document.getElementById('uri');
-            let userEl = document.getElementById('user');
-            let tokenEl = document.getElementById('token');
-            let actionEl = document.getElementById('action');
-            let filterEl = document.getElementById('filter');
-            let hideParentsBtn = document.getElementById('hide-parents');
-            let hideTestsBtn = document.getElementById('hide-tests');
-
-            let inputSaveEl = document.getElementById('input-save-btn');
-            let inputRestoreEl = document.getElementById('input-restore-btn');
-            let inputClearEl = document.getElementById('input-clear-btn');
-
-            let notifyModalEl = document.getElementById('notifyModal');
-            let notifyModal = new bootstrap.Modal(notifyModalEl);
 
             document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
                 if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
@@ -271,10 +273,14 @@
                 });
             });
 
-            function notify(message) {
-                notifyModalEl.querySelector('.modal-body').innerText = message
-                notifyModal.show();
-            }
+            document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagram() {
+                try {
+                    downloadDiagramAsPng();
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
 
             function saveInput() {
                 let data = {
@@ -330,6 +336,80 @@
             restoreInput(true);
         });
 
+        function notify(message) {
+            notifyModalEl.querySelector('.modal-body').innerText = message
+            notifyModal.show();
+        }
+
+        function downloadDiagramAsPng() {
+            let svgEl = document.querySelector('svg');
+                if (!svgEl) {
+                    notify('Click "Show diagram" button before trying to export');
+
+                    return;
+                }
+
+                function triggerDownload(imgURI) {
+                    const a = document.createElement('a');
+                    a.download = 'MY_COOL_IMAGE.png'; // filename
+                    a.target = '_blank';
+                    a.href = imgURI;
+
+                    a.click();
+                    // // trigger download button
+                    // // (set `bubbles` to false here.
+                    // // or just `a.click()` if you don't care about bubbling)
+                    // a.dispatchEvent(new MouseEvent('click', {
+                    //     view: window,
+                    //     bubbles: false,
+                    //     cancelable: true
+                    // }));
+                }
+
+                svgEl.crossOrigin = 'anonymous';
+                const svgString = (new XMLSerializer()).serializeToString(svgEl);
+                const svgBlob = new Blob([svgString], {
+                    type: 'image/svg+xml;charset=utf-8'
+                });
+                svgBlob.crossOrigin = 'anonymous';
+
+                const DOMURL = window.URL || window.webkitURL || window;
+                const url = DOMURL.createObjectURL(svgBlob);
+
+                const image = new Image();
+                image.width = svgEl.width.baseVal.value;
+                image.height = svgEl.height.baseVal.value;
+
+                image.onload = function () {
+                    // const canvas = document.createElement('CANVAS');
+                    const canvas = document.querySelector('canvas');
+
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+
+                    try {
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(image, 0, 0);
+                        DOMURL.revokeObjectURL(url);
+
+                        const imgURI = canvas
+                            .toDataURL('image/png')
+                            .replace('image/png', 'image/octet-stream');
+
+                        triggerDownload(imgURI);
+                    } catch (e) {
+                        console.error('[ERROR] ', e, image);
+                        notify('[ERROR] ' + e.message);
+                        // triggerDownload(imgURI);
+                    }
+
+                };
+
+                image.crossOrigin = 'anonymous';
+                image.referrerPolicy = 'no-referrer';
+                image.src = url;
+        }
+
         function showDiagram(data) {
             if (data.total >= data.maxResults) {
                 notify('Reached page items limit. Update JQL query if possible');
@@ -349,19 +429,19 @@
             outEl.appendChild(el.firstElementChild);
             outEl.hidden = false;
 
-            console.info('[one more] ', outEl.innerHTML, el);
+            // console.info('[one more] ', outEl.innerHTML, el);
 
 
-            // mermaid.run();
+            // // mermaid.run();
 
-            // mermaid.render('mermaid', 'flowchart TB\na-->b').then((v) => {
+            // // mermaid.render('mermaid', 'flowchart TB\na-->b').then((v) => {
+            // // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
             // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
-            mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
-                console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
-                outEl.innerHTML = v.svg;
-            });
+            //     console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
+            //     outEl.innerHTML = v.svg;
+            // });
             // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => console.log('[render] ', v));
-            // mermaid.run();
+            mermaid.run();
 
             console.info('[after] ', outEl.innerHTML);
         }
@@ -620,5 +700,6 @@
     })()
 
 </script>
+<canvas></canvas>
 </body>
 </html>
