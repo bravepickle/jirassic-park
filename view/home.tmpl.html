@@ -64,6 +64,11 @@
                             Open image in new tab instead of download during diagram export
                         </label>
                     </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="short-issue-desc">
+                        <label class="form-check-label" for="short-issue-desc">Short issue description</label>
+                    </div>
                 </div>
 
                 <input type="hidden" name="action" value="show" id="action">
@@ -174,6 +179,7 @@
         let hideParentsBtn = document.getElementById('hide-parents');
         let hideTestsBtn = document.getElementById('hide-tests');
         let openImgEl = document.getElementById('open-image');
+        let shortIssueEl = document.getElementById('short-issue-desc');
 
         let inputSaveEl = document.getElementById('input-save-btn');
         let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -320,8 +326,9 @@
                     hideParents: hideParentsBtn.checked,
                     hideTests: hideTestsBtn.checked,
                     openImage: openImgEl.checked,
+                    shortIssue: shortIssueEl.checked,
                 };
-                console.log('data', data);
+                // console.log('data', data);
 
                 localStorage.setItem('input', JSON.stringify(data));
 
@@ -348,6 +355,7 @@
                 hideParentsBtn.checked = !!input.hideParents;
                 hideTestsBtn.checked = !!input.hideTests;
                 openImgEl.checked = !!input.openImage;
+                shortIssueEl.checked = !!input.shortIssue;
             }
 
             function clearInput() {
@@ -360,6 +368,7 @@
                 hideParentsBtn.checked = false;
                 hideTestsBtn.checked = false;
                 openImgEl.checked = false;
+                shortIssueEl.checked = false;
 
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
@@ -580,11 +589,9 @@
 
         function makeNode(item) {
             let title = makeTitle(item);
+
             let left, right;
             let fillColor;
-
-            const estimate = makeEstimate(item)
-            const timespent = formatTime(_.get(item, 'fields.timespent'))
 
             switch (_.get(item, 'fields.issuetype.name')) {
                 case 'Bug':
@@ -623,6 +630,15 @@
             }
 
             let out = [`    ${item.key}${left}"\`${title}`]
+
+            if (shortIssueEl.checked) {
+                out.push(`\`"${right}`);
+
+                return out.join("\n");
+            }
+
+            const estimate = makeEstimate(item)
+            const timespent = formatTime(_.get(item, 'fields.timespent'))
 
             if (!!estimate) {
                 out.push(`**Estimate:** ${estimate}`);
@@ -821,10 +837,15 @@
         }
 
         function makeTitle(issue) {
-            return '[' + _.get(issue, 'fields.issuetype.name') + ' | ' +
+            let title = '[' + _.get(issue, 'fields.issuetype.name') + ' | ' +
                 _.get(issue, 'fields.status.name') + ' | ' +
-                issue.key  + '] ' + "\n" +
-                _.get(issue, 'fields.summary');
+                issue.key  + '] ';
+
+            if (!shortIssueEl.checked) {
+                title += "\n";
+            }
+
+            return title + _.get(issue, 'fields.summary');
         }
 
         function makeIssueHref(issue) {
