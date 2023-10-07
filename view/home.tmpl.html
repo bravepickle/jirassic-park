@@ -8,13 +8,13 @@
     <title>JIRA Tasks Overview</title>
 </head>
 <body>
-<div class="container-fluid">
+<div class="container-fluid" style="min-width: 3000px">
     <h1>JIRA Tasks Overview</h1>
 
     <div class="card">
         <div class="card-body">
             <h3 class="card-title">Settings</h3>
-            <form action="/action" name="main-form" id="main-form" method="POST">
+            <form action="/action" name="main-form" id="main-form" method="POST" style="max-width: 1400px;">
                 <div class="mb-3">
                     <label class="form-label">Base API URI:</label>
                     <input class="form-control" type="text" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
@@ -623,11 +623,16 @@
             let out = [`    ${item.key}${left}"\`${title}`]
 
             if (!!estimate) {
-                out.push(`**Est:** ${estimate}`);
+                out.push(`**Estimate:** ${estimate}`);
             }
 
             if (!!timespent) {
                 out.push(`**Spent:** ${timespent}`);
+            }
+
+            const assignee = _.get(item, 'fields.assignee.displayName')
+            if (assignee) {
+                out.push(`**Assignee:** ${assignee}`)
             }
 
             out.push(`\`"${right}`);
