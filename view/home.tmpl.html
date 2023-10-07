@@ -631,26 +631,22 @@
 
             let out = [`    ${item.key}${left}"\`${title}`]
 
-            if (shortIssueEl.checked) {
-                out.push(`\`"${right}`);
+            if (!shortIssueEl.checked) {
+                const estimate = makeEstimate(item)
+                const timespent = formatTime(_.get(item, 'fields.timespent'))
 
-                return out.join("\n");
-            }
+                if (!!estimate) {
+                    out.push(`**Estimate:** ${estimate}`);
+                }
 
-            const estimate = makeEstimate(item)
-            const timespent = formatTime(_.get(item, 'fields.timespent'))
+                if (!!timespent) {
+                    out.push(`**Spent:** ${timespent}`);
+                }
 
-            if (!!estimate) {
-                out.push(`**Estimate:** ${estimate}`);
-            }
-
-            if (!!timespent) {
-                out.push(`**Spent:** ${timespent}`);
-            }
-
-            const assignee = _.get(item, 'fields.assignee.displayName')
-            if (assignee) {
-                out.push(`**Assignee:** ${assignee}`)
+                const assignee = _.get(item, 'fields.assignee.displayName')
+                if (assignee) {
+                    out.push(`**Assignee:** ${assignee}`)
+                }
             }
 
             out.push(`\`"${right}`);
