@@ -41,7 +41,7 @@
                 <div class="mb-3">
                     <label for="token" class="form-label">Filter JQL:</label>
                     <!-- <input class="form-control" type="text" pattern="^\d+$" id="filter" name="filter" autocomplete="no" value=""/> -->
-                    <textarea class="form-control" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter"></textarea>
+                    <textarea class="form-control" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter" style="height: 10rem;"></textarea>
                     <div id="filteIdInfo" class="form-text">
                         Filter JQL to use for issues display
                     </div>
@@ -85,7 +85,7 @@
                     <div>
                         <input class="btn btn-secondary mr-2" id="list-filters-btn" value="List filters" name=show>
                         <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
-                        <input class="btn btn-primary" type=button value="Show diagram" name=show id="show-diagram-btn">
+                        <input class="btn btn-primary" type=submit value="Show diagram" name=show id="show-diagram-btn">
 
                         <input class="btn btn-success" type=button value="Export PNG" name=show id="download-diagram-png-btn">
                         <input class="btn btn-success" type=button value="Export SVG" name=show id="download-diagram-svg-btn">
@@ -270,7 +270,13 @@
             inputClearEl.addEventListener('click', () => clearInput());
 
 
-            document.getElementById('show-diagram-btn').addEventListener('click', function onShowDiagram() {
+            document.getElementById('show-diagram-btn').addEventListener('click', onShowDiagram);
+            document.getElementById('main-form').addEventListener('submit', onShowDiagram);
+
+            function onShowDiagram(e) {
+                e.stopPropagation();
+                e.preventDefault();
+
                 let jqlQuery = _.trim(filterEl.value)
 
                 if (!userEl.value || !tokenEl.value || !jqlQuery) {
@@ -297,7 +303,7 @@
                     console.error(e);
                     notify('[ERROR] ' + e.message);
                 });
-            });
+            }
 
             document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagram() {
                 try {
@@ -588,7 +594,7 @@
         }
 
         function makeNode(item) {
-            let title = makeTitle(item);
+            let title = makeTitle(item, shortIssueEl.checked);
 
             let left, right;
             let fillColor;
@@ -832,13 +838,15 @@
             outEl.hidden = false
         }
 
-        function makeTitle(issue) {
-            let title = '[' + _.get(issue, 'fields.issuetype.name') + ' | ' +
-                _.get(issue, 'fields.status.name') + ' | ' +
-                issue.key  + '] ';
+        function makeTitle(issue, shortIssue) {
+            let title;
 
-            if (!shortIssueEl.checked) {
-                title += "\n";
+            if (!shortIssue) {
+                title = '[ ' + _.get(issue, 'fields.issuetype.name') + ' | ' +
+                    _.get(issue, 'fields.status.name') + ' | ' + issue.key  + ' ] ' + "\n";
+            } else {
+                title = '[' + _.get(issue, 'fields.issuetype.name') + '|' +
+                    _.get(issue, 'fields.status.name') + '|' + issue.key  + '] '
             }
 
             return title + _.get(issue, 'fields.summary');
@@ -858,7 +866,7 @@
             data.issues.forEach(function (item) {
                 let el = tplEl.content.cloneNode(true)
                 // el.querySelector('.card-title').innerText = '[' + item.key + '] ' + item.fields.summary;
-                el.querySelector('.card-title').innerText = makeTitle(item);
+                el.querySelector('.card-title').innerText = makeTitle(item, shortIssueEl.checked);
                 el.querySelector('.issue-desc').innerText = _.truncate(item.fields.description, {length: 300});
 
                 el.querySelector('.issue-self').href = makeIssueHref(item);
@@ -869,7 +877,7 @@
                 } else {
                     let parentInfo = item.fields.parent;
                     parentEl.href = makeIssueHref(parentInfo);
-                    parentEl.title = makeTitle(parentInfo)
+                    parentEl.title = makeTitle(parentInfo, true)
                 }
 
                 let linksEl = el.querySelector('.issue-links');
@@ -898,7 +906,7 @@
                         itemEl.querySelector('.issue-label').innerText = refType;
 
                         let linkEl = itemEl.querySelector('.issue-ref');
-                        linkEl.innerText = makeTitle(issue);
+                        linkEl.innerText = makeTitle(issue, true);
                         linkEl.href = makeIssueHref(issue);
 
                         linksEl.appendChild(itemEl);
