@@ -8,7 +8,7 @@
     <title>JIRA Tasks Overview</title>
 </head>
 <body>
-<div class="container">
+<div class="container-fluid">
     <h1>JIRA Tasks Overview</h1>
 
     <div class="card">
@@ -57,6 +57,13 @@
                         <input class="form-check-input" type="checkbox" id="hide-tests">
                         <label class="form-check-label" for="hide-tests">Hide test references</label>
                     </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="open-image">
+                        <label class="form-check-label" for="open-image">
+                            Open image in new tab instead of download during diagram export
+                        </label>
+                    </div>
                 </div>
 
                 <input type="hidden" name="action" value="show" id="action">
@@ -75,8 +82,8 @@
                         <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
                         <input class="btn btn-primary" type=button value="Show diagram" name=show id="show-diagram-btn">
 
-                        <input class="btn btn-success" type=button value="Download PNG" name=show id="download-diagram-png-btn">
-                        <input class="btn btn-success" type=button value="Download SVG" name=show id="download-diagram-svg-btn">
+                        <input class="btn btn-success" type=button value="Export PNG" name=show id="download-diagram-png-btn">
+                        <input class="btn btn-success" type=button value="Export SVG" name=show id="download-diagram-svg-btn">
                     </div>
                 </div>
             </form>
@@ -87,9 +94,8 @@
         <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle output</a>
     </div>
 
-    <div id="output" hidden class="mt-5 mb-5">
-        <h3 class="mb-3">Output</h3>
-    </div>
+    <h3 class="mb-3">Output</h3>
+    <div id="output" hidden class="mt-5 mb-5" style="overflow-x: auto;"></div>
 
     <!-- Modal -->
     <div class="modal fade" id="notifyModal" tabindex="-1" aria-hidden="true">
@@ -167,6 +173,7 @@
         let filterEl = document.getElementById('filter');
         let hideParentsBtn = document.getElementById('hide-parents');
         let hideTestsBtn = document.getElementById('hide-tests');
+        let openImgEl = document.getElementById('open-image');
 
         let inputSaveEl = document.getElementById('input-save-btn');
         let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -174,6 +181,8 @@
 
         let notifyModalEl = document.getElementById('notifyModal');
         let notifyModal = new bootstrap.Modal(notifyModalEl);
+
+        let outEl = document.getElementById('output');
 
         document.addEventListener('DOMContentLoaded', function () {
             mermaid.initialize({ startOnLoad: false });
@@ -300,6 +309,7 @@
                     filter: filterEl.value,
                     hideParents: hideParentsBtn.checked,
                     hideTests: hideTestsBtn.checked,
+                    openImage: openImgEl.checked,
                 };
                 console.log('data', data);
 
@@ -327,6 +337,7 @@
                 filterEl.value = input.filter
                 hideParentsBtn.checked = !!input.hideParents;
                 hideTestsBtn.checked = !!input.hideTests;
+                openImgEl.checked = !!input.openImage;
             }
 
             function clearInput() {
@@ -338,6 +349,7 @@
                 filterEl.value = ''
                 hideParentsBtn.checked = false;
                 hideTestsBtn.checked = false;
+                openImgEl.checked = false;
 
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
@@ -353,87 +365,98 @@
 
         function downloadDiagramAsPng() {
             let svgEl = document.querySelector('svg');
-                if (!svgEl) {
-                    notify('Click "Show diagram" button before trying to export');
+            if (!svgEl) {
+                notify('Click "Show diagram" button before trying to export');
 
-                    return;
+                return;
+            }
+
+            function triggerDownload(imgURI) {
+                const a = document.createElement('a');
+                a.download = 'MY_COOL_IMAGE.png'; // filename
+                a.target = '_blank';
+                a.href = imgURI;
+
+                a.click();
+                // // trigger download button
+                // // (set `bubbles` to false here.
+                // // or just `a.click()` if you don't care about bubbling)
+                // a.dispatchEvent(new MouseEvent('click', {
+                //     view: window,
+                //     bubbles: false,
+                //     cancelable: true
+                // }));
+            }
+
+            svgEl.crossOrigin = 'anonymous';
+            const svgString = (new XMLSerializer()).serializeToString(svgEl);
+            const svgBlob = new Blob([svgString], {
+                type: 'image/svg+xml;charset=utf-8'
+            });
+            svgBlob.crossOrigin = 'anonymous';
+
+            const DOMURL = window.URL || window.webkitURL || window;
+            const url = DOMURL.createObjectURL(svgBlob);
+
+            const image = new Image();
+            image.width = svgEl.width.baseVal.value;
+            image.height = svgEl.height.baseVal.value;
+
+            image.onload = function () {
+                const canvas = document.createElement('CANVAS');
+                // const canvas = document.querySelector('canvas');
+
+                canvas.width = image.width;
+                canvas.height = image.height;
+
+                try {
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(image, 0, 0);
+                    DOMURL.revokeObjectURL(url);
+
+                    // const imgURI = canvas
+                    //     .toDataURL('image/png')
+                    //     .replace('image/png', 'image/octet-stream');
+
+
+                    const imgURI = canvas
+                        .toDataURL('image/svg')
+                        .replace('image/svg', 'image/octet-stream');
+
+
+                    triggerDownload(imgURI);
+                } catch (e) {
+                    console.error('[ERROR] ', e, image);
+                    notify('[ERROR] ' + e.message + "\n\nTry downloading by righ clicking the image");
+
+                    outEl.innerHTML = '';
+                    outEl.appendChild(canvas); // stupid dirty hack...
+                    // triggerDownload(imgURI);
                 }
 
-                function triggerDownload(imgURI) {
-                    const a = document.createElement('a');
-                    a.download = 'MY_COOL_IMAGE.png'; // filename
-                    a.target = '_blank';
-                    a.href = imgURI;
+            };
 
-                    a.click();
-                    // // trigger download button
-                    // // (set `bubbles` to false here.
-                    // // or just `a.click()` if you don't care about bubbling)
-                    // a.dispatchEvent(new MouseEvent('click', {
-                    //     view: window,
-                    //     bubbles: false,
-                    //     cancelable: true
-                    // }));
-                }
-
-                svgEl.crossOrigin = 'anonymous';
-                const svgString = (new XMLSerializer()).serializeToString(svgEl);
-                const svgBlob = new Blob([svgString], {
-                    type: 'image/svg+xml;charset=utf-8'
-                });
-                svgBlob.crossOrigin = 'anonymous';
-
-                const DOMURL = window.URL || window.webkitURL || window;
-                const url = DOMURL.createObjectURL(svgBlob);
-
-                const image = new Image();
-                image.width = svgEl.width.baseVal.value;
-                image.height = svgEl.height.baseVal.value;
-
-                image.onload = function () {
-                    // const canvas = document.createElement('CANVAS');
-                    const canvas = document.querySelector('canvas');
-
-                    canvas.width = image.width;
-                    canvas.height = image.height;
-
-                    try {
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(image, 0, 0);
-                        DOMURL.revokeObjectURL(url);
-
-                        // const imgURI = canvas
-                        //     .toDataURL('image/png')
-                        //     .replace('image/png', 'image/octet-stream');
-
-
-                        const imgURI = canvas
-                            .toDataURL('image/svg')
-                            .replace('image/svg', 'image/octet-stream');
-
-
-                        triggerDownload(imgURI);
-                    } catch (e) {
-                        console.error('[ERROR] ', e, image);
-                        notify('[ERROR] ' + e.message);
-                        // triggerDownload(imgURI);
-                    }
-
-                };
-
-                image.crossOrigin = 'anonymous';
-                image.referrerPolicy = 'no-referrer';
-                image.src = url;
+            image.crossOrigin = 'anonymous';
+            image.referrerPolicy = 'no-referrer';
+            image.src = url;
         }
 
         function downloadDiagramAsSvg() {
             // var btn = document.querySelector('button')
             var svg = document.querySelector('svg')
 
+            if (!svg) {
+                notify('Click "Show diagram" button before trying to export');
+
+                return;
+            }
+
             let triggerDownload = (imgURI, fileName) => {
                 let a = document.createElement('a')
 
-                a.setAttribute('download', 'image.svg')
+                if (!openImgEl.value) {
+                    a.setAttribute('download', 'issues_diagram.svg')
+                }
                 a.setAttribute('href', imgURI)
                 a.setAttribute('target', '_blank')
 
@@ -453,14 +476,20 @@
         }
 
         function showDiagram(data) {
+            outEl.innerHTML = '';
+
+            if (!data) {
+                notify('No issues found for the query');
+                outEl.hidden = false;
+
+                return;
+            }
+
             if (data.total >= data.maxResults) {
                 notify('Reached page items limit. Update JQL query if possible');
             }
 
-            let outEl = document.getElementById('output');
             let tplEl = document.getElementById('mermaid-tpl');
-
-            outEl.innerHTML = '';
 
             let el = tplEl.content.cloneNode(true);
 
@@ -477,23 +506,114 @@
             // // mermaid.run();
 
             // // mermaid.render('mermaid', 'flowchart TB\na-->b').then((v) => {
-            // // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
-            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
-            //     console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
-            //     outEl.innerHTML = v.svg;
-            // });
-            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => console.log('[render] ', v));
-            mermaid.run();
 
-            console.info('[after] ', outEl.innerHTML);
+            mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
+                // console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
+                console.log('[RENDER] ', outEl.innerHTML);
+                outEl.innerHTML = v.svg;
+            });
+            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => console.log('[render] ', v));
+            // mermaid.run();
+
+            // console.info('[after] ', outEl.innerHTML);
+        }
+
+        function formatTime(seconds) {
+            if (!seconds) {
+                return 'N/A';
+            }
+
+            var sec_num = parseInt(seconds, 10);
+            var hours   = Math.floor(sec_num / 3600);
+            var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+            var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+            if (hours   < 10) {hours   = "0"+hours;}
+            if (minutes < 10) {minutes = "0"+minutes;}
+            if (seconds < 10) {seconds = "0"+seconds;}
+
+            return hours + ':' + minutes + ':' + seconds;
+        }
+
+        function makeEstimate(item) {
+            if (!item) {
+                return 'N/A'
+            }
+
+            let estimate = _.get(item, 'fields.aggregatetimeoriginalestimate');
+
+            if (!estimate && _.get(item, 'fields.aggregatetimeestimate')) {
+                estimate = item.fields.aggregatetimeestimate;
+            }
+
+            if (!estimate && _.get(item, 'fields.timeoriginalestimate')) {
+                estimate = item.fields.timeoriginalestimate;
+            }
+
+            if (!estimate && _.get(item, 'fields.timeestimate')) {
+                estimate = item.fields.timeestimate;
+            }
+
+            return formatTime(estimate)
+        }
+
+        function makeNode(item) {
+            let title = makeTitle(item);
+            let left, right;
+            let fillColor;
+
+            const estimate = makeEstimate(item)
+            const timespent = formatTime(_.get(item, 'fields.timespent'))
+
+            switch (_.get(item, 'fields.issuetype.name')) {
+                case 'Bug':
+                    left = '{' + '{';
+                    right = '}' + '}';
+                    fillColor = '#e60073'
+                    break;
+
+                case 'Epic':
+                    left = '>';
+                    right = ']';
+                    fillColor = '#cc00cc'
+                    break;
+
+                case 'Sub-task':
+                    left = '([';
+                    right = '])';
+                    fillColor = '#66ccff'
+                    break;
+
+                case 'Task':
+                    left = '(';
+                    right = ')';
+                    fillColor = '#9999ff'
+                    break;
+
+                case 'Story':
+                    left = '(';
+                    right = ')';
+                    fillColor = '#009900'
+                    break;
+
+                default:
+                    left = '[[';
+                    right = ']]'
+            }
+
+            let out = [`    ${item.key}${left}"\`${title} \n**Est:** ${estimate}\n**Spent:** ${timespent}\`"${right}`];
+
+            if (fillColor) {
+                out.push(`    style ${item.key} fill:${fillColor}`);
+            }
+
+            return out.join("\n")
         }
 
         function makeDiagram(issues) {
             let hideParentsBtn = document.getElementById('hide-parents');
             let hideTestsBtn = document.getElementById('hide-tests');
-            let out = [
-`flowchart LR`
-            ];
+            let out = [`flowchart LR`];
             let issueKeys = [];
 
             let addIssueDesc = function (item) {
@@ -503,8 +623,8 @@
 
                 item.fields.summary = item.fields.summary.replaceAll('"', '');
 
-                let title = makeTitle(item);
-                out.push(`    ${item.key}("${title}")`);
+                out.push(makeNode(item))
+                // out.push(`    ${item.key}("${title}")`);
                 out.push(`    click ${item.key} href "${makeIssueHref(item)}" _blank`);
                 out.push(''); // separator
 
@@ -633,10 +753,14 @@
 
 
         function showFilters(data) {
-            let outEl = document.getElementById('output');
-            let tplEl = document.getElementById('filter-tpl');
-
             outEl.innerHTML = '';
+            if (!data) {
+                outEl.hidden = false;
+
+                return;
+            }
+
+            let tplEl = document.getElementById('filter-tpl');
 
             data.forEach(function (item) {
                 let el = tplEl.content.cloneNode(true)
@@ -742,6 +866,5 @@
     })()
 
 </script>
-<canvas></canvas>
 </body>
 </html>
