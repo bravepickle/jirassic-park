@@ -23,6 +23,7 @@ go.work
 # Application ignores
 /.env
 /.env.app
+/.env.app.local
 /jirassic-park
 
 /var/

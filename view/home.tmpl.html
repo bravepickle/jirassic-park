@@ -75,7 +75,8 @@
                         <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
                         <input class="btn btn-primary" type=button value="Show diagram" name=show id="show-diagram-btn">
 
-                        <input class="btn btn-primary" type=button value="Download PNG" name=show id="download-diagram-png-btn">
+                        <input class="btn btn-success" type=button value="Download PNG" name=show id="download-diagram-png-btn">
+                        <input class="btn btn-success" type=button value="Download SVG" name=show id="download-diagram-svg-btn">
                     </div>
                 </div>
             </form>
@@ -282,6 +283,15 @@
                 }
             });
 
+            document.getElementById('download-diagram-svg-btn').addEventListener('click', function onShowDiagram() {
+                try {
+                    downloadDiagramAsSvg();
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
+
             function saveInput() {
                 let data = {
                     uri: uriBaseEl.value,
@@ -392,9 +402,15 @@
                         ctx.drawImage(image, 0, 0);
                         DOMURL.revokeObjectURL(url);
 
+                        // const imgURI = canvas
+                        //     .toDataURL('image/png')
+                        //     .replace('image/png', 'image/octet-stream');
+
+
                         const imgURI = canvas
-                            .toDataURL('image/png')
-                            .replace('image/png', 'image/octet-stream');
+                            .toDataURL('image/svg')
+                            .replace('image/svg', 'image/octet-stream');
+
 
                         triggerDownload(imgURI);
                     } catch (e) {
@@ -408,6 +424,32 @@
                 image.crossOrigin = 'anonymous';
                 image.referrerPolicy = 'no-referrer';
                 image.src = url;
+        }
+
+        function downloadDiagramAsSvg() {
+            // var btn = document.querySelector('button')
+            var svg = document.querySelector('svg')
+
+            let triggerDownload = (imgURI, fileName) => {
+                let a = document.createElement('a')
+
+                a.setAttribute('download', 'image.svg')
+                a.setAttribute('href', imgURI)
+                a.setAttribute('target', '_blank')
+
+                a.click()
+            }
+
+            // let save = () => {
+                let data = (new XMLSerializer()).serializeToString(svg)
+                let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
+                let url = URL.createObjectURL(svgBlob)
+
+                triggerDownload(url)
+            // }
+
+            // var btn = document.querySelector('button')
+            // btn.addEventListener('click', save)
         }
 
         function showDiagram(data) {
