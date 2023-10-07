@@ -95,7 +95,7 @@
     </div>
 
     <h3 class="mb-3">Output</h3>
-    <div id="output" hidden class="mt-5 mb-5" style="overflow-x: auto;"></div>
+    <div id="output" hidden class="mt-5 mb-5" style="overflow-x: auto"></div>
 
     <!-- Modal -->
     <div class="modal fade" id="notifyModal" tabindex="-1" aria-hidden="true">
@@ -185,7 +185,15 @@
         let outEl = document.getElementById('output');
 
         document.addEventListener('DOMContentLoaded', function () {
-            mermaid.initialize({ startOnLoad: false });
+            mermaid.initialize({
+                startOnLoad: false,
+                flowchart: { useMaxWidth: true, htmlLabels: true },
+
+            });
+
+            // mermaid.flowchartConfig = {
+            //     width: 100%
+            // };
 
             document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
                 if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
@@ -520,24 +528,35 @@
 
         function formatTime(seconds) {
             if (!seconds) {
-                return 'N/A';
+                return '';
             }
 
             var sec_num = parseInt(seconds, 10);
-            var hours   = Math.floor(sec_num / 3600);
-            var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-            var seconds = sec_num - (hours * 3600) - (minutes * 60);
+            var hours   = parseInt(Math.floor(sec_num / 3600), 10);
+            var minutes = parseInt(Math.floor((sec_num - (hours * 3600)) / 60), 10);
+            // var seconds = parseInt(sec_num - (hours * 3600) - (minutes * 60), 1);
 
-            if (hours   < 10) {hours   = "0"+hours;}
-            if (minutes < 10) {minutes = "0"+minutes;}
-            if (seconds < 10) {seconds = "0"+seconds;}
+            var parts = [];
+            if (hours > 0) {
+                parts.push(hours + 'h');
+            }
 
-            return hours + ':' + minutes + ':' + seconds;
+            if (minutes > 0) {
+                parts.push(hours + 'm');
+            }
+
+            return parts.join(' ');
+
+            // if (hours   < 10) {hours   = "0"+hours;}
+            // if (minutes < 10) {minutes = "0"+minutes;}
+            // if (seconds < 10) {seconds = "0"+seconds;}
+
+            // return hours + ':' + minutes + ':' + seconds;
         }
 
         function makeEstimate(item) {
             if (!item) {
-                return 'N/A'
+                return ''
             }
 
             let estimate = _.get(item, 'fields.aggregatetimeoriginalestimate');
@@ -601,10 +620,22 @@
                     right = ']]'
             }
 
-            let out = [`    ${item.key}${left}"\`${title} \n**Est:** ${estimate}\n**Spent:** ${timespent}\`"${right}`];
+            let out = [`    ${item.key}${left}"\`${title}`]
+
+            if (!!estimate) {
+                out.push(`**Est:** ${estimate}`);
+            }
+
+            if (!!timespent) {
+                out.push(`**Spent:** ${timespent}`);
+            }
+
+            out.push(`\`"${right}`);
 
             if (fillColor) {
                 out.push(`    style ${item.key} fill:${fillColor}`);
+            // } else {
+            //     out.push(`    style ${item.key} width:400`);
             }
 
             return out.join("\n")
