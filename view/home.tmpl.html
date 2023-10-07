@@ -41,7 +41,7 @@
                 <div class="mb-3">
                     <label for="token" class="form-label">Filter JQL:</label>
                     <!-- <input class="form-control" type="text" pattern="^\d+$" id="filter" name="filter" autocomplete="no" value=""/> -->
-                    <textarea class="form-control" placeholder="Leave a JQL here" id="filter" name="filter"></textarea>
+                    <textarea class="form-control" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter"></textarea>
                     <div id="filteIdInfo" class="form-text">
                         Filter JQL to use for issues display
                     </div>
@@ -112,7 +112,7 @@
 
     <!-- Template -->
     <template id="filter-tpl">
-        <div class="card mb-3">
+        <div class="card mb-3" style="max-width: 1400px;">
             <div class="card-body">
                 <h5 class="card-title"></h5>
                 <p class="card-subtitle filter-desc"></p>
@@ -127,7 +127,7 @@
     </template>
 
     <template id="issue-tpl">
-        <div class="card mb-3">
+        <div class="card mb-3" style="max-width: 1400px;">
             <div class="card-body">
                 <h5 class="card-title"></h5>
                 <div class="card-text bg-light text-secondary p-3 mb-3 issue-desc"></div>
@@ -188,7 +188,9 @@
             mermaid.initialize({
                 startOnLoad: false,
                 flowchart: { useMaxWidth: true, htmlLabels: true },
-
+                securityLevel: 'loose',
+                // theme: 'base',
+                // theme: 'forest',
             });
 
             // mermaid.flowchartConfig = {
@@ -649,7 +651,12 @@
         function makeDiagram(issues) {
             let hideParentsBtn = document.getElementById('hide-parents');
             let hideTestsBtn = document.getElementById('hide-tests');
-            let out = [`flowchart LR`];
+            let out = [
+                '---',
+                'title: Issues Flowchart at ' + (new Date()).toLocaleString(),
+                '---',
+                'flowchart LR'
+            ];
             let issueKeys = [];
 
             let addIssueDesc = function (item) {
@@ -816,7 +823,7 @@
         function makeTitle(issue) {
             return '[' + _.get(issue, 'fields.issuetype.name') + ' | ' +
                 _.get(issue, 'fields.status.name') + ' | ' +
-                issue.key  + '] ' +
+                issue.key  + '] ' + "\n" +
                 _.get(issue, 'fields.summary');
         }
 
