@@ -775,7 +775,7 @@
 
                 switch (type.name) {
                     case 'Parent':
-                        out.push(`    ${from.key} == parent ==> ${to.key}`);
+                        out.push(`    ${from.key} -. parent .-> ${to.key}`);
                         break;
                     case 'Blocks':
                         if (type.desc === 'blocks') {
@@ -786,9 +786,9 @@
                         break;
                     case 'Cloners':
                         if (type.desc === 'clones') {
-                            out.push(`    ${from.key} -- clones --> ${to.key}`);
+                            out.push(`    ${from.key} -- clones --x ${to.key}`);
                         } else {
-                            out.push(`    ${to.key} -- clones --> ${from.key}`);
+                            out.push(`    ${to.key} -- clones --x ${from.key}`);
                         }
                         break;
                     case 'Relates':
@@ -812,8 +812,8 @@
                     //     addIssueDesc(item.fields.parent);
                     // }
 
-                    if (!hideParentsBtn.checked && !issueLinks.includes(item.key)) {
-                        issueLinks.push(item.key);
+                    if (!hideParentsBtn.checked && !issueLinks.includes(item.fields.parent.key)) {
+                        issueLinks.push(item.fields.parent.key);
                     }
 
                     addRefIssue({name: 'Parent', dir: 'parent'}, item, item.fields.parent);
