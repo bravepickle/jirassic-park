@@ -213,13 +213,6 @@
                 axios({
                     method: 'get',
                     url: _.trimEnd(uriBaseEl.value, '/') + '/filter/my',
-                    // method: 'post',
-                    // url: '/action',
-                    // data: {
-                    //     action: 'list-filters',
-                    //     username: userEl.value,
-                    //     password: tokenEl.value
-                    // }
                     auth: {
                         username: userEl.value,
                         password: tokenEl.value
@@ -245,24 +238,26 @@
                     return;
                 }
 
-                axios({
-                    method: 'get',
-                    url: _.trimEnd(uriBaseEl.value, '/') + '/search',
-                    params: {jql: jqlQuery},
-                    auth: {
-                        username: userEl.value,
-                        password: tokenEl.value
-                    },
-                    withCredentials: true,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                    },
-                })
-                .then((response) => showIssues(response.data))
-                .catch(function (e) {
-                    console.error(e);
-                    notify('[ERROR] ' + e.message);
-                });
+                searchIssues(jqlQuery).then((response) => showIssues(response.data))
+
+                // axios({
+                //     method: 'get',
+                //     url: _.trimEnd(uriBaseEl.value, '/') + '/search',
+                //     params: {jql: jqlQuery},
+                //     auth: {
+                //         username: userEl.value,
+                //         password: tokenEl.value
+                //     },
+                //     withCredentials: true,
+                //     headers: {
+                //         'X-Requested-With': 'XMLHttpRequest',
+                //     },
+                // })
+                // .then((response) => showIssues(response.data))
+                // .catch(function (e) {
+                //     console.error(e);
+                //     notify('[ERROR] ' + e.message);
+                // });
             });
 
             inputSaveEl.addEventListener('click', () => saveInput());
@@ -532,11 +527,18 @@
 
             // // mermaid.render('mermaid', 'flowchart TB\na-->b').then((v) => {
 
-            mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
-                // console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
-                console.log('[RENDER] ', outEl.innerHTML);
-                outEl.innerHTML = v.svg;
+            makeDiagram(data.issues).then(function (diagram) {
+                mermaid.render('mermaid', diagram).then((v) => {
+                    // console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
+                    console.log('[RENDER] ', outEl.innerHTML);
+                    outEl.innerHTML = v.svg;
+                });
             });
+            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
+            //     // console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
+            //     console.log('[RENDER] ', outEl.innerHTML);
+            //     outEl.innerHTML = v.svg;
+            // });
             // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => console.log('[render] ', v));
             // mermaid.run();
 
@@ -635,9 +637,11 @@
                     right = ']]'
             }
 
-            let out = [`    ${item.key}${left}"\`${title}`]
+            let out = []
 
             if (!shortIssueEl.checked) {
+                out.push(`    ${item.key}${left}"\`${title}`);
+
                 const estimate = makeEstimate(item)
                 const timespent = formatTime(_.get(item, 'fields.timespent'))
 
@@ -653,9 +657,11 @@
                 if (assignee) {
                     out.push(`**Assignee:** ${assignee}`)
                 }
-            }
 
-            out.push(`\`"${right}`);
+                out.push(`\`"${right}`);
+            } else {
+                out.push(`    ${item.key}${left}"${title}"${right}`);
+            }
 
             if (fillColor) {
                 out.push(`    style ${item.key} fill:${fillColor}`);
@@ -696,9 +702,9 @@
 
             // TODO: add parent issues
 
+            let issueLinks = []
             let refKeys = [];
             let addRefIssue = function (type, from, to) {
-// return;
                 if (hideTestsBtn.checked && ( _.get(from, 'fields.issuetype.name') === 'Test' || _.get(to, 'fields.issuetype.name') === 'Test')) {
                     return; // skip test issue refs from display
                 }
@@ -710,7 +716,7 @@
 
                 switch (type.name) {
                     case 'Parent':
-                        out.push(`    ${from.key} -. parent .-> ${to.key}`);
+                        out.push(`    ${from.key} == parent ==> ${to.key}`);
                         break;
                     case 'Blocks':
                         if (type.desc === 'blocks') {
@@ -738,43 +744,17 @@
             };
 
             // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
-            // TODO: toggle parent issues & grouping
-
-            // let parentMap = {};
-            // let issueMap = {};
-            // issues.forEach(function (item) {
-            //     issueMap[item.key] = item;
-
-            //     if (item.fields.parent) {
-            //         issueMap[item.key] = item.fields.parent;
-
-            //         if (_.get(item.fields.parent, 'fields.issuetype.name') === 'Epic') {
-            //             return; // consider epics as tasks without parent
-            //         }
-
-            //         if (!parentMap[item.fields.parent.key]) {
-            //             parentMap[item.fields.parent.key] = [];
-            //         }
-
-            //         parentMap[item.fields.parent.key].push(item.key);
-
-            //         item.fields.issuelinks.forEach(function (ref) {
-            //             // todo: issue map
-            //         });
-            //     }
-            // });
-
-            // console.info('[parentMap]', parentMap);
-            // console.info('[issueMap]', issueMap);
-
-
 
             issues.forEach(function (item) {
                 addIssueDesc(item);
 
                 if (item.fields.parent && !hideParentsBtn.checked) {
-                    if (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
-                        addIssueDesc(item.fields.parent);
+                    // if (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
+                    //     addIssueDesc(item.fields.parent);
+                    // }
+
+                    if (!hideParentsBtn.checked && !issueLinks.includes(item.key)) {
+                        issueLinks.push(item.key);
                     }
 
                     addRefIssue({name: 'Parent', dir: 'parent'}, item, item.fields.parent);
@@ -793,23 +773,69 @@
                             refType = ref.type.inward;
                         }
 
+                        if (!issueLinks.includes(issue.key)) {
+                            issueLinks.push(issue.key);
+                        }
+
                         if (_.get(item, 'fields.parent.id') === issue.id) {
                             return; // if references parent issue then skip
                         }
 
 
-                        if (!hideTestsBtn.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
-                            addIssueDesc(issue);
-                        }
+                        // if (!hideTestsBtn.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
+                        //     addIssueDesc(issue);
+                        // }
 
                         addRefIssue({name: ref.type.name, dir: refType}, item, issue);
                     });
                 }
             });
 
-            console.info('[Diagram] ', out.join("\n"));
+            const finished = () => {
+                console.info('[Diagram] ', out.join("\n"));
 
-            return out.join("\n");
+                return out.join("\n");
+            };
+
+            const missingIssuesByRef = _.difference(issueLinks, issueKeys);
+            if (missingIssuesByRef.length > 0) {
+                console.info('[missing by link keys]', missingIssuesByRef);
+
+                return searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
+                    .then((response) => {
+                        response.data.issues.forEach((item) => {
+                            if (!hideTestsBtn.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
+                                addIssueDesc(item);
+                            }
+                        })
+                    }).then(finished);
+            }
+
+            // console.info('[Diagram] ', out.join("\n"));
+
+            // return out.join("\n");
+
+            return new Promise(finished);
+        }
+
+        function searchIssues(jqlQuery) {
+            return axios({
+                    method: 'get',
+                    url: _.trimEnd(uriBaseEl.value, '/') + '/search',
+                    params: {jql: jqlQuery},
+                    auth: {
+                        username: userEl.value,
+                        password: tokenEl.value
+                    },
+                    withCredentials: true,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                })
+                .catch(function (e) {
+                    console.error(e);
+                    notify('[ERROR] ' + e.message);
+                });
         }
 
 
