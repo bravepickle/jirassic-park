@@ -778,14 +778,14 @@
                         out.push(`    ${from.key} -. parent .-> ${to.key}`);
                         break;
                     case 'Blocks':
-                        if (type.desc === 'blocks') {
+                        if (type.dir === 'blocks') {
                             out.push(`    ${from.key} -- blocks --> ${to.key}`);
                         } else {
                             out.push(`    ${to.key} -- blocks --> ${from.key}`);
                         }
                         break;
                     case 'Cloners':
-                        if (type.desc === 'clones') {
+                        if (type.dir === 'clones') {
                             out.push(`    ${from.key} -- clones --x ${to.key}`);
                         } else {
                             out.push(`    ${to.key} -- clones --x ${from.key}`);
