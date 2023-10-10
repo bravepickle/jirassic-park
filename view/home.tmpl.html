@@ -96,6 +96,7 @@
                         <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
                         <input class="btn btn-primary" type=submit value="Show diagram" name=show id="show-diagram-btn">
 
+                        <input class="btn btn-success" type=button value="Render from Input" name=show id="render-diagram-btn">
                         <input class="btn btn-success" type=button value="Export PNG" name=show id="download-diagram-png-btn">
                         <input class="btn btn-success" type=button value="Export SVG" name=show id="download-diagram-svg-btn">
                     </div>
@@ -111,7 +112,12 @@
 
     <div>
         <h3>Input</h3>
-        <textarea id="input" class="form-control collapse bg-light" style="overflow-x: auto; min-height: 300px; max-width: 1400px; white-space: pre; font-monospace"></textarea>    
+        <textarea id="input" class="form-control collapse bg-light" style="overflow-x: auto; min-height: 300px; max-width: 1400px; white-space: pre; font-monospace">
+graph LR
+    A --- B
+    B-->C[forbidden]
+    B-. uses .->D
+        </textarea>    
     </div>
     
     <div class="pt-5 pb-3">
@@ -170,12 +176,7 @@
 
     <!-- Diagram Workflow Mermaid -->
     <template id="mermaid-tpl">
-        <pre class="mermaid" id="mermaid">
-            graph LR
-            A --- B
-            B-->C[fa:fa-ban forbidden]
-            B-->D(fa:fa-spinner);
-        </pre>
+        <pre class="mermaid" id="mermaid"></pre>
     </template>
 
 </div>
@@ -219,7 +220,7 @@
                 flowchart: { useMaxWidth: true, htmlLabels: true },
                 securityLevel: 'loose',
                 // theme: 'base',
-                // theme: 'forest',
+                theme: 'forest',
             });
 
             // mermaid.flowchartConfig = {
@@ -232,6 +233,8 @@
 
                     return;
                 }
+
+                inCollapse.hide();
 
                 axios({
                     method: 'get',
@@ -261,26 +264,9 @@
                     return;
                 }
 
-                searchIssues(jqlQuery).then((response) => showIssues(response.data))
+                inCollapse.hide();
 
-                // axios({
-                //     method: 'get',
-                //     url: _.trimEnd(uriBaseEl.value, '/') + '/search',
-                //     params: {jql: jqlQuery},
-                //     auth: {
-                //         username: userEl.value,
-                //         password: tokenEl.value
-                //     },
-                //     withCredentials: true,
-                //     headers: {
-                //         'X-Requested-With': 'XMLHttpRequest',
-                //     },
-                // })
-                // .then((response) => showIssues(response.data))
-                // .catch(function (e) {
-                //     console.error(e);
-                //     notify('[ERROR] ' + e.message);
-                // });
+                searchIssues(jqlQuery).then((response) => showIssues(response.data))
             });
 
             inputSaveEl.addEventListener('click', () => saveInput());
@@ -341,6 +327,26 @@
                 }
             });
 
+            document.getElementById('render-diagram-btn').addEventListener('click', function onShowDiagram() {
+                const diagramContent = inEl.value.trim();
+                if (!diagramContent) {
+                    notify('Click "Show diagram" button or edit manually "Input" before trying to render');
+
+                    return;
+                }
+                
+                try {
+                    outCollapse.show();
+                    mermaid.render('mermaid', diagramContent).then((v) => {
+                        outEl.innerHTML = v.svg;
+                        console.log('[RENDER] ', outEl.innerHTML, diagramContent);
+                    });
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
+
             function saveInput() {
                 let data = {
                     uri: uriBaseEl.value,
@@ -352,7 +358,6 @@
                     openImage: openImgEl.checked,
                     shortIssue: shortIssueEl.checked,
                 };
-                // console.log('data', data);
 
                 localStorage.setItem('input', JSON.stringify(data));
 
@@ -421,14 +426,6 @@
                 a.href = imgURI;
 
                 a.click();
-                // // trigger download button
-                // // (set `bubbles` to false here.
-                // // or just `a.click()` if you don't care about bubbling)
-                // a.dispatchEvent(new MouseEvent('click', {
-                //     view: window,
-                //     bubbles: false,
-                //     cancelable: true
-                // }));
             }
 
             svgEl.crossOrigin = 'anonymous';
@@ -555,10 +552,9 @@
 
             makeDiagram(data.issues).then(function (diagram) {
                 mermaid.render('mermaid', diagram).then((v) => {
-                    // console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
-                    console.log('[RENDER] ', outEl.innerHTML);
                     inEl.value = diagram
                     outEl.innerHTML = v.svg;
+                    console.log('[RENDER]', outEl.innerHTML);
                 });
             });
             // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
@@ -1031,6 +1027,7 @@
                     let parentInfo = item.fields.parent;
                     parentEl.href = makeIssueHref(parentInfo);
                     parentEl.title = makeTitle(parentInfo, true, false)
+                    // parentEl.innerText = 'Parent ' + parentEl.title;
                 }
 
                 let linksEl = el.querySelector('.issue-links');

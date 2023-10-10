@@ -17,11 +17,6 @@ var debug bool
 var useTls bool
 var publicUri string
 
-func HelloServer(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("This is an example server.\n"))
-}
-
 func HomePage(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 
