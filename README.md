@@ -27,6 +27,7 @@ curl --insecure https://jirassic.localhost:9443/jira/rest/api/2/issue/TEST-234 -
 # Troubleshooting
 * use proxy instead of directly going to app container. Will save troubles with TLS, configs, CORS etc.
 * if using proxy then .env.app should be configured without TLS and 443 port
+* only one Traefik container can be run in Docker simultaneously. Otherwise will appear various errors during run.  
 
 # TODO
 - [ ] use TLS

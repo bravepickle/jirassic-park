@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"html/template"
@@ -75,29 +74,6 @@ func HomePage(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Fatal(`[ERROR] Failed to build page from the template: `, err)
 	}
-}
-
-func ActionPage(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	body, _ := ioutil.ReadAll(req.Body)
-
-	w.Write(body)
-
-	var data map[string]interface{}
-	err := json.Unmarshal(body, &data)
-	if err != nil {
-		if debug {
-			log.Printf("[WARN] Could not unmarshal json: %s\n", err)
-		}
-
-		return
-	}
-
-	if debug {
-		log.Printf("[INFO] JSON map: %v\n", data)
-	}
-
-	// TODO: list filters handle
 }
 
 func makeGetRequest(uri string) ([]byte, error) {
@@ -201,8 +177,8 @@ func main() {
 	var tlsValue string
 	tlsValue = strings.ToLower(os.Getenv(`APP_SERVER_TLS`))
 
-	http.HandleFunc("/hello", HelloServer)
-	http.HandleFunc("/action", ActionPage)
+	// http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("view/assets"))))
+	http.Handle("/assets/", http.FileServer(http.Dir("view")))
 	http.HandleFunc("/", HomePage)
 
 	var err error
