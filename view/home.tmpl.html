@@ -97,8 +97,12 @@
                         <input class="btn btn-primary" type=submit value="Show diagram" name=show id="show-diagram-btn">
 
                         <input class="btn btn-success" type=button value="Render from Input" name=show id="render-diagram-btn">
-                        <input class="btn btn-success" type=button value="Export PNG" name=show id="download-diagram-png-btn">
-                        <input class="btn btn-success" type=button value="Export SVG" name=show id="download-diagram-svg-btn">
+
+                        <div class="btn-group" role="group" aria-label="Export">
+                            <button type="button" class="btn btn-success" id="download-diagram-png-btn">Export PNG</button>
+                            <button type="button" class="btn btn-success" id="download-diagram-svg-btn">Export SVG</button>
+                            <button type="button" class="btn btn-success" id="download-diagram-svg-btn-v2">Export SVG v.2</button>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -117,9 +121,9 @@ graph LR
     A --- B
     B-->C[forbidden]
     B-. uses .->D
-        </textarea>    
+        </textarea>
     </div>
-    
+
     <div class="pt-5 pb-3">
         <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle output</a>
     </div>
@@ -185,6 +189,7 @@ graph LR
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.5.0/dist/mermaid.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js" integrity="sha512-euWc/Qv8Kp0CbTX1M+Q3BvUyoOaq9Au50TT7vz3MFf5ver39ybq6zV+RngDY8eN8AIQFigxjwYv6jhoP546vfQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
     (function() {
@@ -311,7 +316,8 @@ graph LR
 
             document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagram() {
                 try {
-                    downloadDiagramAsPng();
+                    makeDiagramUrl('png');
+                    // downloadDiagramAsPng();
                 } catch (e) {
                     console.error('[ERROR] ', e);
                     notify('[ERROR] ' + e.message);
@@ -320,6 +326,17 @@ graph LR
 
             document.getElementById('download-diagram-svg-btn').addEventListener('click', function onShowDiagram() {
                 try {
+                    // TODO: cleanup font awesome icons (fa:), links (click)
+                    makeDiagramUrl('svg');
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
+
+            document.getElementById('download-diagram-svg-btn-v2').addEventListener('click', function onShowDiagramV2() {
+                try {
+                    // TODO: cleanup font links
                     downloadDiagramAsSvg();
                 } catch (e) {
                     console.error('[ERROR] ', e);
@@ -334,7 +351,7 @@ graph LR
 
                     return;
                 }
-                
+
                 try {
                     outCollapse.show();
                     mermaid.render('mermaid', diagramContent).then((v) => {
@@ -828,7 +845,7 @@ graph LR
                     // }
 
                     if (
-                        !hideParentsBtn.checked && 
+                        !hideParentsBtn.checked &&
                         !issueLinks.includes(item.fields.parent.key) &&
                         (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test')
                     ) {
@@ -945,8 +962,11 @@ graph LR
         }
 
         function makeTitle(issue, shortIssue, useIcons) {
-            
+
             let title = '';
+
+            // FIXME: fix icons display during export
+            useIcons = false;
 
             if (!!useIcons) {
                 let symbol;
@@ -988,7 +1008,7 @@ graph LR
                     title += symbol + ' ';
                 }
             }
-            
+
 
             if (!shortIssue) {
                 title += '[ ' + _.get(issue, 'fields.issuetype.name') + ' | ' +
@@ -1003,6 +1023,55 @@ graph LR
 
         function makeIssueHref(issue) {
             return jiraUri + '/browse/' + issue.key;
+        }
+
+        function textEncode (str) {
+            if (window.TextEncoder) {
+                 return new TextEncoder('utf-8').encode(str);
+            }
+
+            var utf8 = unescape(encodeURIComponent(str));
+            var result = new Uint8Array(utf8.length);
+            for (var i = 0; i < utf8.length; i++) {
+                result[i] = utf8.charCodeAt(i);
+            }
+
+            return result;
+        }
+
+        function makeDiagramUrl(type) {
+            let url;
+            const diagramType = 'mermaid';
+            const source = inEl.value.trim();
+            const typeName = !!type ? type : 'svg';
+
+            if (source != '') {
+                const comporessed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_');
+
+                // Kroki usage - good for different diagrams
+                var urlPath = diagramType + '/' + typeName + '/' + comporessed;
+                url = 'https://kroki.io/' + urlPath;
+
+                // url = 'https://mermaid.ink/img/pako:' + comporessed + '?type=' + typeName;
+
+                console.log('[URL]', url);
+
+                let img = document.createElement('A');
+                img.target = '_blank';
+                img.href = url;
+
+                console.log('[URL]', url, img);
+
+                img.click();
+
+                return url;
+            }
+
+            notify('Failed to generate diagram URL. Check if diagram input is defined');
+
+            return null;
         }
 
         function showIssues(data) {
