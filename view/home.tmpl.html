@@ -75,6 +75,11 @@
                     </div>
 
                     <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="disable-icons">
+                        <label class="form-check-label" for="disable-icons">Disable icons in diagram</label>
+                    </div>
+
+                    <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="short-issue-desc">
                         <label class="form-check-label" for="short-issue-desc">Short issue description</label>
                     </div>
@@ -205,6 +210,7 @@ graph LR
         let hideTestsBtn = document.getElementById('hide-tests');
         let openImgEl = document.getElementById('open-image');
         let shortIssueEl = document.getElementById('short-issue-desc');
+        let disableIconsEl = document.getElementById('disable-icons');
 
         let inputSaveEl = document.getElementById('input-save-btn');
         let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -225,7 +231,7 @@ graph LR
                 flowchart: { useMaxWidth: true, htmlLabels: true },
                 securityLevel: 'loose',
                 // theme: 'base',
-                theme: 'forest',
+                // theme: 'forest',
             });
 
             // mermaid.flowchartConfig = {
@@ -374,6 +380,7 @@ graph LR
                     hideTests: hideTestsBtn.checked,
                     openImage: openImgEl.checked,
                     shortIssue: shortIssueEl.checked,
+                    disableIcons: disableIconsEl.checked,
                 };
 
                 localStorage.setItem('input', JSON.stringify(data));
@@ -402,6 +409,7 @@ graph LR
                 hideTestsBtn.checked = !!input.hideTests;
                 openImgEl.checked = !!input.openImage;
                 shortIssueEl.checked = !!input.shortIssue;
+                disableIconsEl.checked = !!input.disableIcons;
             }
 
             function clearInput() {
@@ -964,11 +972,7 @@ graph LR
         function makeTitle(issue, shortIssue, useIcons) {
 
             let title = '';
-
-            // FIXME: fix icons display during export
-            useIcons = false;
-
-            if (!!useIcons) {
+            if (!!useIcons && !disableIconsEl.checked) {
                 let symbol;
                 switch (_.get(issue, 'fields.status.name')) {
                     case 'To Do':
