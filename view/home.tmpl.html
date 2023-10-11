@@ -194,7 +194,12 @@ graph LR
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.5.0/dist/mermaid.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js" integrity="sha512-euWc/Qv8Kp0CbTX1M+Q3BvUyoOaq9Au50TT7vz3MFf5ver39ybq6zV+RngDY8eN8AIQFigxjwYv6jhoP546vfQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<!-- For Kroki Export -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/1.0.11/pako.min.js" integrity="sha512-euWc/Qv8Kp0CbTX1M+Q3BvUyoOaq9Au50TT7vz3MFf5ver39ybq6zV+RngDY8eN8AIQFigxjwYv6jhoP546vfQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> -->
+
+<!-- For Mermaid Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js" integrity="sha512-g2TeAWw5GPnX7z0Kn8nFbYfeHcvAu/tx6d6mrLe/90mkCxO+RcptyYpksUz35EO337F83bZwcmUyHiHamspkfg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
     (function() {
@@ -1055,9 +1060,75 @@ graph LR
             return result;
         }
 
+        function makeMermaidUrl(source, type) {
+            let data = JSON.stringify({
+                code: source,
+                mermaid: "{\"theme\": \"default\"}",
+                autoSync: true,
+                updateDiagram:false,
+                panZoom:false,
+                editorMode:"code"
+            });
+
+            const _hasBuffer = typeof Buffer == "function";
+
+            const _fromCC = String.fromCharCode.bind(String);
+            // const _U8Afrom = typeof Uint8Array.from == "function" ? Uint8Array.from.bind(Uint8Array) : t => new Uint8Array(Array.prototype.slice.call(t, 0))
+            const _mkUriSafe = t => t.replace(/=/g, "").replace(/[+\/]/g, e => e == "+" ? "-" : "_");
+
+            // const _fromUint8Array = t => Buffer.from(t).toString("base64")
+            const _fromUint8Array = _hasBuffer ? t => Buffer.from(t).toString("base64") : t => {
+                let r = [];
+                for (let n = 0, o = t.length; n < o; n += 4096) r.push(_fromCC.apply(null, t.subarray(n, n + 4096)));
+
+                return window.btoa(r.join(""))
+            };
+
+            const fromUint8Array = (t, encode = true) => encode ? _mkUriSafe(_fromUint8Array(t)) : _fromUint8Array(t)
+            // const cb_utob = t => {
+            //     if (t.length < 2) {
+            //         var e = t.charCodeAt(0);
+            //         return e < 128 ? t : e < 2048 ? _fromCC(192 | e >>> 6) + _fromCC(128 | e & 63) : _fromCC(224 | e >>> 12 & 15) + _fromCC(128 | e >>> 6 & 63) + _fromCC(128 | e & 63)
+            //     } else {
+            //         var e = 65536 + (t.charCodeAt(0) - 55296) * 1024 + (t.charCodeAt(1) - 56320);
+            //         return _fromCC(240 | e >>> 18 & 7) + _fromCC(128 | e >>> 12 & 63) + _fromCC(128 | e >>> 6 & 63) + _fromCC(128 | e & 63)
+            //     }
+            // }
+
+            // FIXME: remove next line
+            // data = '{"code":"graph LR\nB ","mermaid":"{\n  \"theme\": \"default\"\n}","autoSync":true,"updateDiagram":false,"panZoom":false,"editorMode":"code"}';
+            // data = '{"code":"graph LR\nB","mermaid":"{\n  \"theme\": \"default\"\n}","autoSync":true,"updateDiagram":false,"panZoom":false,"editorMode":"code"}';
+            // const comporessed2 = pako.deflate(textEncode(source), { level: 9 });
+
+            const encoded = new TextEncoder().encode(data);
+            // const encoded = textEncode(data)
+            const serialized = pako.deflate(encoded, {level: 9});
+
+            const compressed = fromUint8Array(serialized, true);
+
+            return 'https://mermaid.ink/img/pako:' + compressed + '?type=' + type;
+        }
+
+        function makeKrokiUrl(source, type, diagramType = 'mermaid') {
+            const compressed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_');
+
+            // const comporessed2 = makeMermaidUrl(source)
+
+
+            // console.log('[kroki]', compressed)
+            // console.log('[mermaid]', window.btoa(comporessed2))
+
+
+            // Kroki usage - good for different diagrams
+            var urlPath = diagramType + '/' + type + '/' + compressed;
+
+            return 'https://kroki.io/' + urlPath;
+        }
+
         function makeDiagramUrl(type) {
             let url;
-            const diagramType = 'mermaid';
             let source = inEl.value.trim();
             const typeName = !!type ? type : 'svg';
 
@@ -1069,13 +1140,24 @@ graph LR
             console.log('[SRC]', source)
 
             if (source != '') {
-                const comporessed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
-                    .replace(/\+/g, '-')
-                    .replace(/\//g, '_');
+                // const comporessed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
+                //     .replace(/\+/g, '-')
+                //     .replace(/\//g, '_');
 
-                // Kroki usage - good for different diagrams
-                var urlPath = diagramType + '/' + typeName + '/' + comporessed;
-                url = 'https://kroki.io/' + urlPath;
+                // source = '{"code":"graph LR\nB","mermaid":"{\n  \"theme\": \"default\"\n}","autoSync":true,"updateDiagram":false,"panZoom":false,"editorMode":"code"}';
+                // const comporessed2 = pako.deflate(textEncode(source), { level: 9 });
+                // const comporessed2 = makeMermaidUrl(source)
+
+                const url = makeMermaidUrl(source, typeName)
+                // const url = makeKrokiUrl(source, typeName)
+
+                // console.log('[kroki]', makeKrokiUrl(source, typeName))
+                // console.log('[mermaid]', makeMermaidUrl(source, typeName))
+
+
+                // // Kroki usage - good for different diagrams
+                // var urlPath = diagramType + '/' + typeName + '/' + comporessed;
+                // url = 'https://kroki.io/' + urlPath;
 
                 // url = 'https://mermaid.ink/img/pako:' + comporessed + '?type=' + typeName;
 
