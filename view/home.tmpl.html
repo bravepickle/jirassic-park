@@ -91,6 +91,11 @@ fields.priority.name: Priority</code></pre>
                         <input class="form-check-input" type="checkbox" id="short-issue-desc">
                         <label class="form-check-label" for="short-issue-desc">Short issue description</label>
                     </div>
+
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="show-matched">
+                        <label class="form-check-label" for="show-matched">Show only matched issues by JQL query</label>
+                    </div>
                 </div>
 
                 <input type="hidden" name="action" value="show" id="action">
@@ -239,6 +244,7 @@ graph LR
         let shortIssueEl = document.getElementById('short-issue-desc');
         let disableIconsEl = document.getElementById('disable-icons');
         let extraParamsEl = document.getElementById('issue-extra-fields');
+        let showMatchedEl = document.getElementById('show-matched');
 
         let inputSaveEl = document.getElementById('input-save-btn');
         let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -414,6 +420,7 @@ graph LR
                     shortIssue: shortIssueEl.checked,
                     disableIcons: disableIconsEl.checked,
                     extraParams: extraParamsEl.value,
+                    showMatched: showMatchedEl.checked,
                 };
 
                 localStorage.setItem('input', JSON.stringify(data));
@@ -444,6 +451,7 @@ graph LR
                 shortIssueEl.checked = !!input.shortIssue;
                 disableIconsEl.checked = !!input.disableIcons;
                 extraParamsEl.value = !!input.extraParams ? input.extraParams : '';
+                showMatchedEl.checked = !!input.showMatched;
             }
 
             function clearInput() {
@@ -458,6 +466,7 @@ graph LR
                 openImgEl.checked = false;
                 shortIssueEl.checked = false;
                 extraParamsEl.value = '';
+                showMatchedEl.checked = false;
 
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
@@ -875,21 +884,23 @@ graph LR
                 return out.join("\n");
             };
 
-            const missingIssuesByRef = _.difference(issueLinks, issueKeys);
-            if (missingIssuesByRef.length > 0) {
-                console.info('[missing by link keys]', missingIssuesByRef);
+            if (!showMatchedEl.checked) {
+                const missingIssuesByRef = _.difference(issueLinks, issueKeys);
+                if (missingIssuesByRef.length > 0) {
+                    console.info('[missing by link keys]', missingIssuesByRef);
 
-                return searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
-                    .then((response) => {
-                        response.data.issues.forEach((item) => {
-                            if (!hideTestsBtn.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
-                                addIssueDesc(item);
-                            }
-                        })
-                    }).then(finished);
+                    return searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
+                        .then((response) => {
+                            response.data.issues.forEach((item) => {
+                                if (!hideTestsBtn.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
+                                    addIssueDesc(item);
+                                }
+                            })
+                        }).then(finished);
+                }
             }
 
-            return new Promise(finished);
+            return new Promise((resolve) => resolve(finished()));
         }
 
         function searchIssues(jqlQuery) {
