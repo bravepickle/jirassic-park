@@ -1043,6 +1043,10 @@ graph LR
 
             const compressed = fromUint8Array(serialized, true);
 
+            if (type === 'svg') {
+                return 'https://mermaid.ink/svg/pako:' + compressed;
+            }
+
             return 'https://mermaid.ink/img/pako:' + compressed + '?type=' + type;
         }
 
