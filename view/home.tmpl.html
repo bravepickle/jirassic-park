@@ -444,14 +444,14 @@ graph LR
                 return;
             }
 
-            function triggerDownload(imgURI) {
-                const a = document.createElement('a');
-                a.download = 'MY_COOL_IMAGE.png'; // filename
-                a.target = '_blank';
-                a.href = imgURI;
+            // function triggerDownload(imgURI) {
+            //     const a = document.createElement('a');
+            //     a.download = 'MY_COOL_IMAGE.png'; // filename
+            //     a.target = '_blank';
+            //     a.href = imgURI;
 
-                a.click();
-            }
+            //     a.click();
+            // }
 
             svgEl.crossOrigin = 'anonymous';
             const svgString = (new XMLSerializer()).serializeToString(svgEl);
@@ -489,7 +489,7 @@ graph LR
                         .replace('image/svg', 'image/octet-stream');
 
 
-                    triggerDownload(imgURI);
+                    triggerDownload(imgURI, 'issues_diagram.png');
                 } catch (e) {
                     console.error('[ERROR] ', e, image);
                     notify('[ERROR] ' + e.message + "\n\nTry downloading by righ clicking the image");
@@ -506,6 +506,18 @@ graph LR
             image.src = url;
         }
 
+        let triggerDownload = (imgURI, fileName) => {
+            let a = document.createElement('a')
+
+            if (!openImgEl.value) {
+                a.setAttribute('download', !!fileName ? fileName : 'issues_diagram.svg')
+            }
+            a.setAttribute('href', imgURI)
+            a.setAttribute('target', '_blank')
+
+            a.click()
+        }
+
         function downloadDiagramAsSvg() {
             // var btn = document.querySelector('button')
             var svg = document.querySelector('svg')
@@ -516,24 +528,24 @@ graph LR
                 return;
             }
 
-            let triggerDownload = (imgURI, fileName) => {
-                let a = document.createElement('a')
+            // let triggerDownload = (imgURI, fileName) => {
+            //     let a = document.createElement('a')
 
-                if (!openImgEl.value) {
-                    a.setAttribute('download', 'issues_diagram.svg')
-                }
-                a.setAttribute('href', imgURI)
-                a.setAttribute('target', '_blank')
+            //     if (!openImgEl.value) {
+            //         a.setAttribute('download', 'issues_diagram.svg')
+            //     }
+            //     a.setAttribute('href', imgURI)
+            //     a.setAttribute('target', '_blank')
 
-                a.click()
-            }
+            //     a.click()
+            // }
 
             // let save = () => {
                 let data = (new XMLSerializer()).serializeToString(svg)
                 let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
                 let url = URL.createObjectURL(svgBlob)
 
-                triggerDownload(url)
+                triggerDownload(url, 'issues_diagram.svg')
             // }
 
             // var btn = document.querySelector('button')
@@ -552,7 +564,7 @@ graph LR
             }
 
             if (data.total >= data.maxResults) {
-                notify('Reached page items limit. Update JQL query if possible');
+                notify('Reached page items limit. Not all issues will be displayed. Update JQL query if possible');
             }
 
             let tplEl = document.getElementById('mermaid-tpl');
@@ -1046,8 +1058,15 @@ graph LR
         function makeDiagramUrl(type) {
             let url;
             const diagramType = 'mermaid';
-            const source = inEl.value.trim();
+            let source = inEl.value.trim();
             const typeName = !!type ? type : 'svg';
+
+            if (typeName === 'svg') {
+                // source = source.replaceAll(/fa:\S+ ?/g, ''); // remove font awesome
+                source = source.replaceAll(/\n[ ]*click [^\n]+/gi, ''); // remove links that cause problems for svg
+            }
+
+            console.log('[SRC]', source)
 
             if (source != '') {
                 const comporessed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
@@ -1062,13 +1081,15 @@ graph LR
 
                 console.log('[URL]', url);
 
-                let img = document.createElement('A');
-                img.target = '_blank';
-                img.href = url;
+                triggerDownload(url, 'issues_diagram.' + typeName)
 
-                console.log('[URL]', url, img);
+                // let img = document.createElement('A');
+                // img.target = '_blank';
+                // img.href = url;
 
-                img.click();
+                // console.log('[URL]', url, img);
+
+                // img.click();
 
                 return url;
             }
