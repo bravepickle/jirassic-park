@@ -829,10 +829,14 @@ graph LR
 
             // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
 
-            issues.forEach(function (item) {
-                addIssueDesc(item);
+            issues.forEach((item)  => addIssueDesc(item));
 
-                if (item.fields.parent && !hideParentsBtn.checked) {
+            issues.forEach(function (item) {
+                if (
+                    item.fields.parent &&
+                    !hideParentsBtn.checked &&
+                    (!showMatchedEl.checked || issueKeys.includes(item.fields.parent.key))
+                ) {
                     // if (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
                     //     addIssueDesc(item.fields.parent);
                     // }
@@ -862,6 +866,10 @@ graph LR
                         }
 
                         if (!issueLinks.includes(issue.key)) {
+                            if (showMatchedEl.checked && !issueKeys.includes(issue.key)) {
+                                return; // skip adding references to not matched issue refs
+                            }
+
                             issueLinks.push(issue.key);
                         }
 
