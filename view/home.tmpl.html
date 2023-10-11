@@ -725,7 +725,12 @@ graph LR
 
                 const extraParams = getListExtraParams();
                 extraParams.forEach((param) => {
-                    out.push(`**${param.label}:** ${_.get(item, param.path)}`)
+                    let val = _.get(item, param.path);
+                    if (typeof val === 'object') {
+                        val = JSON.stringify(val);
+                    }
+
+                    out.push(`**${param.label}:** ${val}`)
                 });
 
                 out.push(`\`"${right}`);
@@ -1165,8 +1170,12 @@ graph LR
                     extraParams.forEach((param) => {
                         let subEl = document.createElement('DIV');
                         subEl.classList.add('row', 'mb-2');
-                        subEl.innerHTML = `<div class="col-2"><strong>${param.label}</strong></div>
-                            <div class="col-10">${_.get(item, param.path)}</div>`;
+                        let val = _.get(item, param.path);
+                        if (typeof val === 'object') {
+                            val = JSON.stringify(val);
+                        }
+
+                        subEl.innerHTML = `<div class="col-2"><strong>${param.label}</strong></div><div class="col-10">${val}</div>`;
 
                         extraParamsContainer.appendChild(subEl);
                     });
