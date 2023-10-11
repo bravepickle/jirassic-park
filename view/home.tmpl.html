@@ -49,10 +49,25 @@
 
                 <div class="mb-3">
                     <label for="token" class="form-label">Filter JQL:</label>
-                    <!-- <input class="form-control" type="text" pattern="^\d+$" id="filter" name="filter" autocomplete="no" value=""/> -->
                     <textarea class="form-control" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter" style="height: 10rem;"></textarea>
                     <div id="filteIdInfo" class="form-text">
                         Filter JQL to use for issues display
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="issue-extra-fields" class="form-label">Extra issue fields:</label>
+                    <textarea class="form-control" placeholder="Specify extra fields here..." spellcheck="false" id="issue-extra-fields" name="issue-extra-fields" style="height: 10rem;"></textarea>
+                    <div id="filteIdInfo" class="form-text">
+                        Using dot notation specify extra fields you want to have in diagram and issues list, separated by new line. Label can be added after colon.
+                        Read <a rel="nofollow" href="https://developer.atlassian.com/server/jira/platform/rest-apis/" target="_blank">API docs</a> or look in to dev toolbar response output for params info
+                        <p>
+                            <strong>Example:</strong>
+                            <pre class="bg-light p-2"><code>id
+key
+fields.created:Issue created
+fields.priority.name: Priority</code></pre>
+                        </p>
                     </div>
                 </div>
 
@@ -97,8 +112,8 @@
                     </div>
 
                     <div>
-                        <input class="btn btn-secondary mr-2" id="list-filters-btn" value="List filters" name=show>
-                        <input class="btn btn-secondary" type=button value="Show task relations" name=show id="show-tasks-btn">
+                        <input class="btn btn-secondary" id="list-filters-btn" value="List filters" name=show>
+                        <input class="btn btn-secondary" type=button value="Show issues" name=show id="show-tasks-btn">
                         <input class="btn btn-primary" type=submit value="Show diagram" name=show id="show-diagram-btn">
 
                         <input class="btn btn-success" type=button value="Render from Input" name=show id="render-diagram-btn">
@@ -106,7 +121,7 @@
                         <div class="btn-group" role="group" aria-label="Export">
                             <button type="button" class="btn btn-success" id="download-diagram-png-btn">Export PNG</button>
                             <button type="button" class="btn btn-success" id="download-diagram-svg-btn">Export SVG</button>
-                            <button type="button" class="btn btn-success" id="download-diagram-svg-btn-v2">Export SVG v.2</button>
+                            <!-- <button type="button" class="btn btn-success" id="download-diagram-svg-btn-v2">Export SVG v.2</button> -->
                         </div>
                     </div>
                 </div>
@@ -167,9 +182,12 @@ graph LR
 
     <template id="issue-tpl">
         <div class="card mb-3" style="max-width: 1400px;">
+            <div class="card-header h5"></div>
             <div class="card-body">
-                <h5 class="card-title"></h5>
+                <!-- <h5 class="card-title"></h5> -->
                 <div class="card-text bg-light text-secondary p-3 mb-3 issue-desc"></div>
+                <div class="issue-extra mb-3"></div>
+
                 <a href="#" target="_blank" class="card-link issue-self">View Issue</a>
                 <a href="#" target="_blank" data-bs-toggle="tooltip" data-bs-placement="top" class="card-link issue-parent">Parent Issue</a>
 
@@ -204,7 +222,6 @@ graph LR
 <script>
     (function() {
         let jiraUri = '{{ .jira_uri }}';
-        // mermaid.initialize();
 
         let uriBaseEl = document.getElementById('uri');
         let userEl = document.getElementById('user');
@@ -216,6 +233,7 @@ graph LR
         let openImgEl = document.getElementById('open-image');
         let shortIssueEl = document.getElementById('short-issue-desc');
         let disableIconsEl = document.getElementById('disable-icons');
+        let extraParamsEl = document.getElementById('issue-extra-fields');
 
         let inputSaveEl = document.getElementById('input-save-btn');
         let inputRestoreEl = document.getElementById('input-restore-btn');
@@ -345,15 +363,16 @@ graph LR
                 }
             });
 
-            document.getElementById('download-diagram-svg-btn-v2').addEventListener('click', function onShowDiagramV2() {
-                try {
-                    // TODO: cleanup font links
-                    downloadDiagramAsSvg();
-                } catch (e) {
-                    console.error('[ERROR] ', e);
-                    notify('[ERROR] ' + e.message);
-                }
-            });
+            // TODO: either remove me later or enable
+            // document.getElementById('download-diagram-svg-btn-v2').addEventListener('click', function onShowDiagramV2() {
+            //     try {
+            //         // TODO: cleanup font links
+            //         downloadDiagramAsSvg();
+            //     } catch (e) {
+            //         console.error('[ERROR] ', e);
+            //         notify('[ERROR] ' + e.message);
+            //     }
+            // });
 
             document.getElementById('render-diagram-btn').addEventListener('click', function onShowDiagram() {
                 const diagramContent = inEl.value.trim();
@@ -386,6 +405,7 @@ graph LR
                     openImage: openImgEl.checked,
                     shortIssue: shortIssueEl.checked,
                     disableIcons: disableIconsEl.checked,
+                    extraParams: extraParamsEl.value,
                 };
 
                 localStorage.setItem('input', JSON.stringify(data));
@@ -415,6 +435,7 @@ graph LR
                 openImgEl.checked = !!input.openImage;
                 shortIssueEl.checked = !!input.shortIssue;
                 disableIconsEl.checked = !!input.disableIcons;
+                extraParamsEl.value = !!input.extraParams ? input.extraParams : '';
             }
 
             function clearInput() {
@@ -428,6 +449,7 @@ graph LR
                 hideTestsBtn.checked = false;
                 openImgEl.checked = false;
                 shortIssueEl.checked = false;
+                extraParamsEl.value = '';
 
                 notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
                 notifyModal.show();
@@ -448,15 +470,6 @@ graph LR
 
                 return;
             }
-
-            // function triggerDownload(imgURI) {
-            //     const a = document.createElement('a');
-            //     a.download = 'MY_COOL_IMAGE.png'; // filename
-            //     a.target = '_blank';
-            //     a.href = imgURI;
-
-            //     a.click();
-            // }
 
             svgEl.crossOrigin = 'anonymous';
             const svgString = (new XMLSerializer()).serializeToString(svgEl);
@@ -484,15 +497,9 @@ graph LR
                     ctx.drawImage(image, 0, 0);
                     DOMURL.revokeObjectURL(url);
 
-                    // const imgURI = canvas
-                    //     .toDataURL('image/png')
-                    //     .replace('image/png', 'image/octet-stream');
-
-
                     const imgURI = canvas
                         .toDataURL('image/svg')
                         .replace('image/svg', 'image/octet-stream');
-
 
                     triggerDownload(imgURI, 'issues_diagram.png');
                 } catch (e) {
@@ -501,7 +508,6 @@ graph LR
 
                     outEl.innerHTML = '';
                     outEl.appendChild(canvas); // stupid dirty hack...
-                    // triggerDownload(imgURI);
                 }
 
             };
@@ -533,28 +539,11 @@ graph LR
                 return;
             }
 
-            // let triggerDownload = (imgURI, fileName) => {
-            //     let a = document.createElement('a')
+            let data = (new XMLSerializer()).serializeToString(svg)
+            let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
+            let url = URL.createObjectURL(svgBlob)
 
-            //     if (!openImgEl.value) {
-            //         a.setAttribute('download', 'issues_diagram.svg')
-            //     }
-            //     a.setAttribute('href', imgURI)
-            //     a.setAttribute('target', '_blank')
-
-            //     a.click()
-            // }
-
-            // let save = () => {
-                let data = (new XMLSerializer()).serializeToString(svg)
-                let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
-                let url = URL.createObjectURL(svgBlob)
-
-                triggerDownload(url, 'issues_diagram.svg')
-            // }
-
-            // var btn = document.querySelector('button')
-            // btn.addEventListener('click', save)
+            triggerDownload(url, 'issues_diagram.svg')
         }
 
         function showDiagram(data) {
@@ -562,7 +551,6 @@ graph LR
 
             if (!data) {
                 notify('No issues found for the query');
-                // outEl.hidden = false;
                 outCollapse.show();
 
                 return;
@@ -573,24 +561,10 @@ graph LR
             }
 
             let tplEl = document.getElementById('mermaid-tpl');
-
             let el = tplEl.content.cloneNode(true);
 
-            // console.info('[before] ', el.innerHTML, outEl);
-
-            // el.firstElementChild.innerHTML = makeDiagram(data.issues)
-            // el.firstElementChild.innerHTML = '';
             outEl.appendChild(el.firstElementChild);
-
             outCollapse.show();
-            // outEl.hidden = false;
-
-            // console.info('[one more] ', outEl.innerHTML, el);
-
-
-            // // mermaid.run();
-
-            // // mermaid.render('mermaid', 'flowchart TB\na-->b').then((v) => {
 
             makeDiagram(data.issues).then(function (diagram) {
                 mermaid.render('mermaid', diagram).then((v) => {
@@ -599,15 +573,6 @@ graph LR
                     console.log('[RENDER]', outEl.innerHTML);
                 });
             });
-            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => {
-            //     // console.log('[RENDER] ', v, 'out.innerHTML', outEl.innerHTML);
-            //     console.log('[RENDER] ', outEl.innerHTML);
-            //     outEl.innerHTML = v.svg;
-            // });
-            // mermaid.render('mermaid', makeDiagram(data.issues)).then((v) => console.log('[render] ', v));
-            // mermaid.run();
-
-            // console.info('[after] ', outEl.innerHTML);
         }
 
         function formatTime(seconds) {
@@ -675,7 +640,6 @@ graph LR
 
             let left, right;
             let fillColor;
-            // let strokeColor;
             let styles = []
             const strokeWidth = shortIssueEl.checked ? '2px' : '4px'
 
@@ -683,13 +647,11 @@ graph LR
                 case 'To Do':
                 case 'Ready for Development':
                 case 'Blocked/Hold':
-                    // strokeColor = '#990000'
                     styles.push('stroke:#990000')
                     styles.push(`stroke-width:${strokeWidth}`)
                     break;
 
                 case 'In Progress':
-                    // strokeColor = 'cc5200'
                     styles.push('stroke:#cc5200')
                     styles.push(`stroke-width:${strokeWidth}`)
                     break;
@@ -701,42 +663,37 @@ graph LR
                     break;
 
                 default:
-                    // strokeColor = '#333333'
+                    // nothing
             }
 
             switch (_.get(item, 'fields.issuetype.name')) {
                 case 'Bug':
                     left = '{' + '{';
                     right = '}' + '}';
-                    // fillColor = '#e60073';
                     styles.push('fill:#e60073')
                     break;
 
                 case 'Epic':
                     left = '>';
                     right = ']';
-                    // fillColor = '#cc00cc'
                     styles.push('fill:#cc00cc')
                     break;
 
                 case 'Sub-task':
                     left = '([';
                     right = '])';
-                    // fillColor = '#66ccff'
                     styles.push('fill:#66ccff')
                     break;
 
                 case 'Task':
                     left = '(';
                     right = ')';
-                    // fillColor = '#9999ff'
                     styles.push('fill:#9999ff')
                     break;
 
                 case 'Story':
                     left = '(';
                     right = ')';
-                    // fillColor = '#009900'
                     styles.push('fill:#009900')
                     break;
 
@@ -766,19 +723,14 @@ graph LR
                     out.push(`**Assignee:** ${assignee}`)
                 }
 
-                out.push(`\`"${right}`);
+                const extraParams = getListExtraParams();
+                extraParams.forEach((param) => {
+                    out.push(`**${param.label}:** ${_.get(item, param.path)}`)
+                });
 
-                // if (fillColor) {
-                //     out.push(`    style ${item.key} fill:${fillColor},stroke:${strokeColor},stroke-width:4px`);
-                // } else {
-                //     out.push(`    style ${item.key} stroke:${strokeColor},stroke-width:4px`);
-                // }
+                out.push(`\`"${right}`);
             } else {
                 out.push(`    ${item.key}${left}"${title}"${right}`);
-
-                // if (fillColor) {
-                //     out.push(`    style ${item.key} fill:${fillColor}`);
-                // }
             }
 
             if (styles.length > 0) {
@@ -806,17 +758,12 @@ graph LR
 
                 item.fields.summary = item.fields.summary.replaceAll('"', '');
 
-                out.push(makeNode(item))
-                // out.push(`    ${item.key}("${title}")`);
+                out.push(makeNode(item));
                 out.push(`    click ${item.key} href "${makeIssueHref(item)}" _blank`);
                 out.push(''); // separator
 
-                // click C href "https://www.github.com" _blank
-                // out.push(`    ${item.key}("\`${title}\`")`);
                 issueKeys.push(item.key);
             };
-
-            // TODO: add parent issues
 
             let issueLinks = []
             let refKeys = [];
@@ -856,7 +803,6 @@ graph LR
                 }
 
                 refKeys.push(key);
-                // console.info('[refs]', refKeys);
             };
 
             // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
@@ -901,7 +847,6 @@ graph LR
                             return; // if references parent issue then skip
                         }
 
-
                         // if (!hideTestsBtn.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
                         //     addIssueDesc(issue);
                         // }
@@ -931,10 +876,6 @@ graph LR
                     }).then(finished);
             }
 
-            // console.info('[Diagram] ', out.join("\n"));
-
-            // return out.join("\n");
-
             return new Promise(finished);
         }
 
@@ -962,7 +903,6 @@ graph LR
         function showFilters(data) {
             outEl.innerHTML = '';
             if (!data) {
-                // outEl.hidden = false;
                 outCollapse.show();
 
                 return;
@@ -983,7 +923,6 @@ graph LR
             });
 
             outCollapse.show();
-            // outEl.hidden = false
         }
 
         function makeTitle(issue, shortIssue, useIcons) {
@@ -1085,23 +1024,8 @@ graph LR
             };
 
             const fromUint8Array = (t, encode = true) => encode ? _mkUriSafe(_fromUint8Array(t)) : _fromUint8Array(t)
-            // const cb_utob = t => {
-            //     if (t.length < 2) {
-            //         var e = t.charCodeAt(0);
-            //         return e < 128 ? t : e < 2048 ? _fromCC(192 | e >>> 6) + _fromCC(128 | e & 63) : _fromCC(224 | e >>> 12 & 15) + _fromCC(128 | e >>> 6 & 63) + _fromCC(128 | e & 63)
-            //     } else {
-            //         var e = 65536 + (t.charCodeAt(0) - 55296) * 1024 + (t.charCodeAt(1) - 56320);
-            //         return _fromCC(240 | e >>> 18 & 7) + _fromCC(128 | e >>> 12 & 63) + _fromCC(128 | e >>> 6 & 63) + _fromCC(128 | e & 63)
-            //     }
-            // }
-
-            // FIXME: remove next line
-            // data = '{"code":"graph LR\nB ","mermaid":"{\n  \"theme\": \"default\"\n}","autoSync":true,"updateDiagram":false,"panZoom":false,"editorMode":"code"}';
-            // data = '{"code":"graph LR\nB","mermaid":"{\n  \"theme\": \"default\"\n}","autoSync":true,"updateDiagram":false,"panZoom":false,"editorMode":"code"}';
-            // const comporessed2 = pako.deflate(textEncode(source), { level: 9 });
 
             const encoded = new TextEncoder().encode(data);
-            // const encoded = textEncode(data)
             const serialized = pako.deflate(encoded, {level: 9});
 
             const compressed = fromUint8Array(serialized, true);
@@ -1113,13 +1037,6 @@ graph LR
             const compressed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
                     .replace(/\+/g, '-')
                     .replace(/\//g, '_');
-
-            // const comporessed2 = makeMermaidUrl(source)
-
-
-            // console.log('[kroki]', compressed)
-            // console.log('[mermaid]', window.btoa(comporessed2))
-
 
             // Kroki usage - good for different diagrams
             var urlPath = diagramType + '/' + type + '/' + compressed;
@@ -1140,38 +1057,10 @@ graph LR
             console.log('[SRC]', source)
 
             if (source != '') {
-                // const comporessed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
-                //     .replace(/\+/g, '-')
-                //     .replace(/\//g, '_');
-
-                // source = '{"code":"graph LR\nB","mermaid":"{\n  \"theme\": \"default\"\n}","autoSync":true,"updateDiagram":false,"panZoom":false,"editorMode":"code"}';
-                // const comporessed2 = pako.deflate(textEncode(source), { level: 9 });
-                // const comporessed2 = makeMermaidUrl(source)
-
                 const url = makeMermaidUrl(source, typeName)
-                // const url = makeKrokiUrl(source, typeName)
-
-                // console.log('[kroki]', makeKrokiUrl(source, typeName))
-                // console.log('[mermaid]', makeMermaidUrl(source, typeName))
-
-
-                // // Kroki usage - good for different diagrams
-                // var urlPath = diagramType + '/' + typeName + '/' + comporessed;
-                // url = 'https://kroki.io/' + urlPath;
-
-                // url = 'https://mermaid.ink/img/pako:' + comporessed + '?type=' + typeName;
-
                 console.log('[URL]', url);
 
-                triggerDownload(url, 'issues_diagram.' + typeName)
-
-                // let img = document.createElement('A');
-                // img.target = '_blank';
-                // img.href = url;
-
-                // console.log('[URL]', url, img);
-
-                // img.click();
+                triggerDownload(url, 'issues_diagram.' + typeName);
 
                 return url;
             }
@@ -1181,17 +1070,42 @@ graph LR
             return null;
         }
 
+        function getListExtraParams() {
+            let list = [];
+            let paths = extraParamsEl.value.trim();
+
+            if (paths === '') {
+                return list;
+            }
+
+            let els = _.filter(paths.split("\n"));
+
+            els.forEach((el) => {
+                const parts = el.split(':', 2).map((v) => v.trim());
+
+                if (parts.length >= 2) {
+                    list.push({label: parts[1], path: parts[0]});
+                } else {
+                    list.push({label: parts[0], path: parts[0]});
+                }
+            });
+
+            // console.info('[extra params RAW]', els, list);
+
+            return list;
+        }
+
         function showIssues(data) {
             let outEl = document.getElementById('output');
             let tplEl = document.getElementById('issue-tpl')
             let issueTplEl = document.getElementById('issue-link-tpl')
+            let extraParams = getListExtraParams();
 
             outEl.innerHTML = ''; // clear input
 
             data.issues.forEach(function (item) {
-                let el = tplEl.content.cloneNode(true)
-                // el.querySelector('.card-title').innerText = '[' + item.key + '] ' + item.fields.summary;
-                el.querySelector('.card-title').innerText = makeTitle(item, shortIssueEl.checked, false);
+                let el = tplEl.content.cloneNode(true);
+                el.querySelector('.card-header').innerText = makeTitle(item, shortIssueEl.checked, false);
                 el.querySelector('.issue-desc').innerText = _.truncate(item.fields.description, {length: 300});
 
                 el.querySelector('.issue-self').href = makeIssueHref(item);
@@ -1202,8 +1116,7 @@ graph LR
                 } else {
                     let parentInfo = item.fields.parent;
                     parentEl.href = makeIssueHref(parentInfo);
-                    parentEl.title = makeTitle(parentInfo, true, false)
-                    // parentEl.innerText = 'Parent ' + parentEl.title;
+                    parentEl.title = makeTitle(parentInfo, true, false);
                 }
 
                 let linksEl = el.querySelector('.issue-links');
@@ -1247,16 +1160,25 @@ graph LR
                     refHeaderEl.parentNode.removeChild(refHeaderEl);
                 }
 
+                let extraParamsContainer = el.querySelector('.issue-extra');
+                if (extraParams.length > 0) {
+                    extraParams.forEach((param) => {
+                        let subEl = document.createElement('DIV');
+                        subEl.classList.add('row', 'mb-2');
+                        subEl.innerHTML = `<div class="col-2"><strong>${param.label}</strong></div>
+                            <div class="col-10">${_.get(item, param.path)}</div>`;
+
+                        extraParamsContainer.appendChild(subEl);
+                    });
+                } else {
+                    extraParamsContainer.parentNode.removeChild(extraParamsContainer);
+                }
+
 
                 outEl.appendChild(el.firstElementChild)
-
-                // if (!item.fields.parent) {
-                //     new bootstrap.Tooltip(parentEl);
-                // }
             });
 
             outCollapse.show();
-            // outEl.hidden = false
         }
     })()
 
