@@ -14,7 +14,7 @@
     }
     </style> -->
 
-    <title>JIRA Tasks Overview</title>
+    <title>JIRAssic Park</title>
 </head>
 <body>
 <div class="container-fluid" style="min-width: 3000px">
@@ -509,7 +509,7 @@ graph LR
         let triggerDownload = (imgURI, fileName) => {
             let a = document.createElement('a')
 
-            if (!openImgEl.value) {
+            if (!openImgEl.checked) {
                 a.setAttribute('download', !!fileName ? fileName : 'issues_diagram.svg')
             }
             a.setAttribute('href', imgURI)
@@ -571,7 +571,7 @@ graph LR
 
             let el = tplEl.content.cloneNode(true);
 
-            console.info('[before] ', el.innerHTML, outEl);
+            // console.info('[before] ', el.innerHTML, outEl);
 
             // el.firstElementChild.innerHTML = makeDiagram(data.issues)
             // el.firstElementChild.innerHTML = '';
@@ -851,7 +851,7 @@ graph LR
                 }
 
                 refKeys.push(key);
-                console.info('[refs]', refKeys);
+                // console.info('[refs]', refKeys);
             };
 
             // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
