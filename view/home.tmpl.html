@@ -1066,10 +1066,10 @@ graph LR
             let source = inEl.value.trim();
             const typeName = !!type ? type : 'svg';
 
-            if (typeName === 'svg') {
-                // source = source.replaceAll(/fa:\S+ ?/g, ''); // remove font awesome
-                source = source.replaceAll(/\n[ ]*click [^\n]+/gi, ''); // remove links that cause problems for svg
-            }
+            // if (typeName === 'svg') {
+            //     // source = source.replaceAll(/fa:\S+ ?/g, ''); // remove font awesome
+            //     source = source.replaceAll(/\n[ ]*click [^\n]+/gi, ''); // remove links that cause problems for svg
+            // }
 
             // console.log('[SRC]', source)
 
