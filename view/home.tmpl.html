@@ -105,15 +105,27 @@ fields.priority.name: Priority</code></pre>
                     </div>
 
                     <div>
-                        <input class="btn btn-secondary" id="list-filters-btn" value="List filters" name=show>
-                        <input class="btn btn-secondary" type=button value="Show issues" name=show id="show-tasks-btn">
-                        <input class="btn btn-primary" type=submit value="Show diagram" name=show id="show-diagram-btn">
+                        <div class="btn-group" role="group" aria-label="Show issues">
+                            <button class="btn btn-secondary" id="list-filters-btn" name=list-filters>
+                                <i class="fas fa-filter"></i> Show filters
+                            </button>
 
-                        <input class="btn btn-success" type=button value="Render from Input" name=show id="render-diagram-btn">
+                            <button class="btn btn-secondary" type=button name=show-tasks id="show-tasks-btn">
+                                <i class="fab fa-jira"></i> Show issues
+                            </button>
+                        </div>
+
+                        <button class="btn btn-primary" name=show-diagram id="show-diagram-btn" type="submit">
+                            <i class="fas fa-project-diagram"></i> Show diagram
+                        </button>
+
+                        <button class="btn btn-success" name=render-diagram id="render-diagram-btn">
+                            <i class="fas fa-bolt"></i> Render from Input
+                        </button>
 
                         <div class="btn-group" role="group" aria-label="Export">
-                            <button type="button" class="btn btn-success" id="download-diagram-png-btn">Export PNG</button>
-                            <button type="button" class="btn btn-success" id="download-diagram-svg-btn">Export SVG</button>
+                            <button type="button" class="btn btn-success" id="download-diagram-png-btn"><i class="fas fa-file-download"></i> Export PNG</button>
+                            <button type="button" class="btn btn-success" id="download-diagram-svg-btn"><i class="fas fa-file-download"></i> Export SVG</button>
                             <!-- <button type="button" class="btn btn-success" id="download-diagram-svg-btn-v2">Export SVG v.2</button> -->
                         </div>
                     </div>
@@ -254,7 +266,10 @@ graph LR
             //     width: 100%
             // };
 
-            document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick() {
+            document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick(e) {
+                e.stopPropagation();
+                e.preventDefault();
+
                 if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
                     notify('[ERROR] Input values are not defined')
 
@@ -379,7 +394,7 @@ graph LR
                     outCollapse.show();
                     mermaid.render('mermaid', diagramContent).then((v) => {
                         outEl.innerHTML = v.svg;
-                        console.log('[RENDER] ', outEl.innerHTML, diagramContent);
+                        // console.log('[RENDER] ', outEl.innerHTML, diagramContent);
                     });
                 } catch (e) {
                     console.error('[ERROR] ', e);
@@ -563,7 +578,7 @@ graph LR
                 mermaid.render('mermaid', diagram).then((v) => {
                     inEl.value = diagram
                     outEl.innerHTML = v.svg;
-                    console.log('[RENDER]', outEl.innerHTML);
+                    // console.log('[RENDER]', outEl.innerHTML);
                 });
             });
         }
@@ -855,7 +870,7 @@ graph LR
             });
 
             const finished = () => {
-                console.info('[Diagram] ', out.join("\n"));
+                // console.info('[Diagram] ', out.join("\n"));
 
                 return out.join("\n");
             };
@@ -1052,11 +1067,11 @@ graph LR
                 source = source.replaceAll(/\n[ ]*click [^\n]+/gi, ''); // remove links that cause problems for svg
             }
 
-            console.log('[SRC]', source)
+            // console.log('[SRC]', source)
 
             if (source != '') {
                 const url = makeMermaidUrl(source, typeName)
-                console.log('[URL]', url);
+                // console.log('[URL]', url);
 
                 triggerDownload(url, 'issues_diagram.' + typeName);
 
