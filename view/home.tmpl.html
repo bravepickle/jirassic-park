@@ -303,7 +303,10 @@ graph LR
                 });
             });
 
-            document.getElementById('show-tasks-btn').addEventListener('click', function onShowTasks() {
+            document.getElementById('show-tasks-btn').addEventListener('click', function onShowTasks(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
                 let jqlQuery = _.trim(filterEl.value)
 
                 if (!userEl.value || !tokenEl.value || !jqlQuery) {
@@ -357,7 +360,10 @@ graph LR
                 });
             }
 
-            document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagram() {
+            document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagramPng(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
                 try {
                     makeDiagramUrl('png');
                     // downloadDiagramAsPng();
@@ -367,7 +373,10 @@ graph LR
                 }
             });
 
-            document.getElementById('download-diagram-svg-btn').addEventListener('click', function onShowDiagram() {
+            document.getElementById('download-diagram-svg-btn').addEventListener('click', function onShowDiagramSvg(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
                 try {
                     // TODO: cleanup font awesome icons (fa:), links (click)
                     makeDiagramUrl('svg');
@@ -388,7 +397,10 @@ graph LR
             //     }
             // });
 
-            document.getElementById('render-diagram-btn').addEventListener('click', function onShowDiagram() {
+            document.getElementById('render-diagram-btn').addEventListener('click', function onRenderDiagram(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
                 const diagramContent = inEl.value.trim();
                 if (!diagramContent) {
                     notify('Click "Show diagram" button or edit manually "Input" before trying to render');
