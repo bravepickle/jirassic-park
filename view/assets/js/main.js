@@ -807,7 +807,6 @@ import api from "./api.js";
         const _hasBuffer = typeof Buffer == "function";
 
         const _fromCC = String.fromCharCode.bind(String);
-        // const _U8Afrom = typeof Uint8Array.from == "function" ? Uint8Array.from.bind(Uint8Array) : t => new Uint8Array(Array.prototype.slice.call(t, 0))
         const _mkUriSafe = t => t.replace(/=/g, "").replace(/[+\/]/g, e => e == "+" ? "-" : "_");
 
         // const _fromUint8Array = t => Buffer.from(t).toString("base64")
