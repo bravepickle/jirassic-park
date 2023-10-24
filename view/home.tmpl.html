@@ -230,7 +230,7 @@ graph LR
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js" integrity="sha512-g2TeAWw5GPnX7z0Kn8nFbYfeHcvAu/tx6d6mrLe/90mkCxO+RcptyYpksUz35EO337F83bZwcmUyHiHamspkfg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
-    (function() {
+        (function() {
         let jiraUri = '{{ .jira_uri }}';
 
         let uriBaseEl = document.getElementById('uri');
@@ -299,7 +299,8 @@ graph LR
                 .then((response) => showFilters(response.data))
                 .catch(function (e) {
                     console.error(e);
-                    notify('[ERROR] ' + e.message);
+                    const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
+                    notify('[ERROR] ' + msg.join("\n"));
                 });
             });
 
@@ -356,7 +357,8 @@ graph LR
                 .then((response) => showDiagram(response.data))
                 .catch(function (e) {
                     console.error(e);
-                    notify('[ERROR] ' + e.message);
+                    const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
+                    notify('[ERROR] ' + msg.join("\n"));
                 });
             }
 
@@ -794,7 +796,7 @@ graph LR
 
                 out.push(makeNode(item));
                 out.push(`    click ${item.key} href "${makeIssueHref(item)}" _blank`);
-                out.push(''); // separator
+                                out.push(''); // separator
 
                 issueKeys.push(item.key);
             };
@@ -939,7 +941,8 @@ graph LR
                 })
                 .catch(function (e) {
                     console.error(e);
-                    notify('[ERROR] ' + e.message);
+                    const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
+                    notify('[ERROR] ' + msg.join("\n"));
                 });
         }
 
