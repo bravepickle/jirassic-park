@@ -10,7 +10,7 @@ services:
         env_file: ./.env.app
         command: "/app/jirassic-park -env .env -debug"
         volumes:
-            - "./view:/app/view"
+            - "./view:/app/view:ro"
         depends_on:
             - proxy
         labels:
