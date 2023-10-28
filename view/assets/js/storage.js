@@ -1,40 +1,4 @@
-class StoreItem {
-    uri
-    user
-    token
-    filter
-    hideParents
-    hideTests
-    openImage
-    shortIssue
-    disableIcons
-    extraParams
-    showMatched
-
-    // attrs = {
-    //     uri,
-    //     user,
-    //     token,
-    //     filter,
-    //     hideParents,
-    //     hideTests,
-    //     openImage,
-    //     shortIssue,
-    //     disableIcons,
-    //     extraParams,
-    //     showMatched,
-    // };
-
-
-    constructor(props) {
-        // _.forIn(props, (name, value) => {
-        //     this[name] = value;
-        // })
-    }
-
-}
-
-export default class InputProcessor {
+export default class StorageProcessor {
     config = {
         elements: {},
         defaults: {
