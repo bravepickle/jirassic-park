@@ -1,5 +1,6 @@
 import api from "./api.js";
 import storageClass from "./storage.js";
+import UtilsClass from "./utils.js";
 
 (function () {
     const elements = {};
@@ -62,9 +63,9 @@ import storageClass from "./storage.js";
         dispatcher: eventDispatcher,
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
-        console.info('[api.instance]', apiInstance)
+    const utils = new UtilsClass(elements, {jiraUri: jiraUri});
 
+    document.addEventListener('DOMContentLoaded', function () {
         mermaid.initialize({
             startOnLoad: false,
             flowchart: {useMaxWidth: true, htmlLabels: true},
@@ -89,16 +90,7 @@ import storageClass from "./storage.js";
                 }
 
                 bs.inCollapse.hide();
-
-                eventDispatcher.publish({
-                    channel: 'requests',
-                    topic: 'api.listFilters',
-                    data: {foo: 'bar'},
-                });
-
-                apiInstance
-                    .listFilters()
-                    .then((response) => showFilters(response));
+                apiInstance.listFilters().then((response) => showFilters(response));
             });
 
         document.getElementById('show-tasks-btn')
@@ -107,7 +99,6 @@ import storageClass from "./storage.js";
                 e.stopPropagation();
 
                 let jqlQuery = _.trim(elements.filterEl.value)
-
                 if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
                     notify('[ERROR] Input values are not defined')
 
@@ -115,9 +106,7 @@ import storageClass from "./storage.js";
                 }
 
                 bs.inCollapse.hide();
-
-                apiInstance.searchIssues(jqlQuery)
-                    .then((response) => showIssues(response));
+                apiInstance.searchIssues(jqlQuery).then((response) => showIssues(response));
             });
 
         elements.inputSaveEl.addEventListener('click', () => storage.saveInput());
@@ -144,9 +133,7 @@ import storageClass from "./storage.js";
                 return;
             }
 
-            apiInstance
-                .searchIssues(jqlQuery)
-                .then((response) => showDiagram(response));
+            apiInstance.searchIssues(jqlQuery).then((response) => showDiagram(response));
         }
 
         document.getElementById('download-diagram-png-btn')
@@ -156,7 +143,6 @@ import storageClass from "./storage.js";
 
                 try {
                     makeDiagramUrl('png');
-                    // downloadDiagramAsPng();
                 } catch (e) {
                     console.error('[ERROR] ', e);
                     notify('[ERROR] ' + e.message);
@@ -176,17 +162,6 @@ import storageClass from "./storage.js";
                     notify('[ERROR] ' + e.message);
                 }
             });
-
-        // TODO: either remove me later or enable
-        // document.getElementById('download-diagram-svg-btn-v2').addEventListener('click', function onShowDiagramV2() {
-        //     try {
-        //         // TODO: cleanup font links
-        //         downloadDiagramAsSvg();
-        //     } catch (e) {
-        //         console.error('[ERROR] ', e);
-        //         notify('[ERROR] ' + e.message);
-        //     }
-        // });
 
         document.getElementById('render-diagram-btn')
             .addEventListener('click', function onRenderDiagram(e) {
@@ -220,18 +195,6 @@ import storageClass from "./storage.js";
         bs.notifyModal.show();
     }
 
-    let triggerDownload = (imgURI, fileName) => {
-        let a = document.createElement('a')
-
-        if (!elements.openImgEl.checked) {
-            a.setAttribute('download', !!fileName ? fileName : 'issues_diagram.svg')
-        }
-        a.setAttribute('href', imgURI)
-        a.setAttribute('target', '_blank')
-
-        a.click()
-    }
-
     function showDiagram(data) {
         elements.outEl.innerHTML = '';
 
@@ -261,62 +224,8 @@ import storageClass from "./storage.js";
         });
     }
 
-    function formatTime(seconds) {
-        if (!seconds) {
-            return '';
-        }
-
-        const sec_num = parseInt(seconds, 10);
-        const hours = parseInt(Math.floor(sec_num / 3600), 10);
-        const minutes = parseInt(Math.floor((sec_num - (hours * 3600)) / 60), 10);
-        // var seconds = parseInt(sec_num - (hours * 3600) - (minutes * 60), 1);
-
-        const parts = [];
-        if (hours > 0) {
-            parts.push(hours + 'h');
-        }
-
-        if (minutes > 0) {
-            parts.push(minutes + 'm');
-        }
-
-        return parts.join(' ');
-    }
-
-    function makeEstimate(item) {
-        if (!item) {
-            return ''
-        }
-
-        let estimate = _.get(item, 'fields.aggregatetimeoriginalestimate');
-
-        if (!estimate && _.get(item, 'fields.aggregatetimeestimate')) {
-            estimate = item.fields.aggregatetimeestimate;
-        }
-
-        if (!estimate && _.get(item, 'fields.timeoriginalestimate')) {
-            estimate = item.fields.timeoriginalestimate;
-        }
-
-        if (!estimate && _.get(item, 'fields.timeestimate')) {
-            estimate = item.fields.timeestimate;
-        }
-
-        return formatTime(estimate)
-    }
-
-    function makeTimeSpent(item) {
-        const timespent = _.get(item, 'fields.aggregatetimespent')
-
-        if (!timespent) {
-            timespent = _.get(item, 'fields.timespent')
-        }
-
-        return formatTime(timespent)
-    }
-
     function makeNode(item) {
-        let title = makeTitle(item, elements.shortIssueEl.checked, true);
+        let title = utils.makeTitle(item, elements.shortIssueEl.checked, true);
 
         let left, right;
         // let fillColor;
@@ -342,8 +251,7 @@ import storageClass from "./storage.js";
                 styles.push(`stroke-width:${strokeWidth}`)
                 break;
 
-            default:
-            // nothing
+            default: // nothing
         }
 
         switch (_.get(item, 'fields.issuetype.name')) {
@@ -387,15 +295,15 @@ import storageClass from "./storage.js";
         if (!elements.shortIssueEl.checked) {
             out.push(`    ${item.key}${left}"\`${title}`);
 
-            const estimate = makeEstimate(item)
-            const timespent = makeTimeSpent(item)
+            const estimate = utils.makeEstimate(item)
+            const timeSpent = utils.makeTimeSpent(item)
 
             if (!!estimate) {
                 out.push(`**Estimate:** ${estimate}`);
             }
 
-            if (!!timespent) {
-                out.push(`**Spent:** ${timespent}`);
+            if (!!timeSpent) {
+                out.push(`**Spent:** ${timeSpent}`);
             }
 
             const assignee = _.get(item, 'fields.assignee.displayName')
@@ -403,7 +311,7 @@ import storageClass from "./storage.js";
                 out.push(`**Assignee:** ${assignee}`)
             }
 
-            const extraParams = getListExtraParams();
+            const extraParams = utils.parseExtraParams();
             extraParams.forEach((param) => {
                 let val = _.get(item, param.path);
                 if (typeof val === 'object') {
@@ -426,8 +334,6 @@ import storageClass from "./storage.js";
     }
 
     function makeDiagram(issues) {
-        // let hideParentsEl = document.getElementById('hide-parents');
-        // let hideTestsEl = document.getElementById('hide-tests');
         let out = [
             '---',
             'title: Issues Flowchart at ' + (new Date()).toLocaleString(),
@@ -444,7 +350,7 @@ import storageClass from "./storage.js";
             item.fields.summary = item.fields.summary.replaceAll('"', '');
 
             out.push(makeNode(item));
-            out.push(`    click ${item.key} href "${makeIssueHref(item)}" _blank`);
+            out.push(`    click ${item.key} href "${utils.makeIssueHref(item)}" _blank`);
             out.push(''); // separator
 
             issueKeys.push(item.key);
@@ -549,12 +455,7 @@ import storageClass from "./storage.js";
             }
         });
 
-        const finished = () => {
-            // console.info('[Diagram] ', out.join("\n"));
-
-            return out.join("\n");
-        };
-
+        const finished = () => out.join("\n");
         if (!elements.showMatchedEl.checked) {
             const missingIssuesByRef = _.difference(issueLinks, issueKeys);
             if (missingIssuesByRef.length > 0) {
@@ -599,80 +500,6 @@ import storageClass from "./storage.js";
         bs.outCollapse.show();
     }
 
-    function makeTitle(issue, shortIssue, useIcons) {
-
-        let title = '';
-        if (!!useIcons && !elements.disableIconsEl.checked) {
-            let symbol;
-            switch (_.get(issue, 'fields.status.name')) {
-                case 'To Do':
-                case 'New':
-                case 'Ready for Development':
-                case 'Ready for Grooming':
-                    symbol = 'fa:fa-spinner'
-                    break;
-
-                case 'Blocked/Hold':
-                    symbol = 'fa:fa-lock'
-                    break;
-
-                case 'In Progress':
-                    symbol = 'fa:fa-star'
-                    break;
-
-                case 'Done':
-                case 'Ready For Release':
-                    symbol = 'fa:fa-check';
-                    break;
-
-                case 'Abandoned':
-                    symbol = 'fa:fa-ban'
-                    break;
-
-                case 'Ready for Testing':
-                case 'Testing':
-                    symbol = 'fa:fa-microscope'
-                    break;
-
-                default:
-                    symbol = ''
-            }
-
-            if (!!symbol) {
-                title += symbol + ' ';
-            }
-        }
-
-
-        if (!shortIssue) {
-            title += '[ ' + _.get(issue, 'fields.issuetype.name') + ' | ' +
-                _.get(issue, 'fields.status.name') + ' | ' + issue.key + ' ] ' + "\n";
-        } else {
-            title += '[' + _.get(issue, 'fields.issuetype.name') + '|' +
-                _.get(issue, 'fields.status.name') + '|' + issue.key + '] '
-        }
-
-        return title + _.get(issue, 'fields.summary');
-    }
-
-    function makeIssueHref(issue) {
-        return jiraUri + '/browse/' + issue.key;
-    }
-
-    // function textEncode(str) {
-    //     if (window.TextEncoder) {
-    //         return new TextEncoder('utf-8').encode(str);
-    //     }
-    //
-    //     var utf8 = unescape(encodeURIComponent(str));
-    //     var result = new Uint8Array(utf8.length);
-    //     for (var i = 0; i < utf8.length; i++) {
-    //         result[i] = utf8.charCodeAt(i);
-    //     }
-    //
-    //     return result;
-    // }
-
     function makeMermaidUrl(source, type) {
         let data = JSON.stringify({
             code: source,
@@ -710,34 +537,13 @@ import storageClass from "./storage.js";
         return 'https://mermaid.ink/img/pako:' + compressed + '?type=' + type;
     }
 
-    // function makeKrokiUrl(source, type, diagramType = 'mermaid') {
-    //     const compressed = window.btoa(pako.deflate(textEncode(source), {level: 9, to: 'string'}))
-    //         .replace(/\+/g, '-')
-    //         .replace(/\//g, '_');
-    //
-    //     // Kroki usage - good for different diagrams
-    //     var urlPath = diagramType + '/' + type + '/' + compressed;
-    //
-    //     return 'https://kroki.io/' + urlPath;
-    // }
-
     function makeDiagramUrl(type) {
-        // let url;
         let source = elements.inEl.value.trim();
         const typeName = !!type ? type : 'svg';
 
-        // if (typeName === 'svg') {
-        //     // source = source.replaceAll(/fa:\S+ ?/g, ''); // remove font awesome
-        //     source = source.replaceAll(/\n[ ]*click [^\n]+/gi, ''); // remove links that cause problems for svg
-        // }
-
-        // console.log('[SRC]', source)
-
         if (source !== '') {
             const url = makeMermaidUrl(source, typeName)
-            // console.log('[URL]', url);
-
-            triggerDownload(url, 'issues_diagram.' + typeName);
+            utils.triggerDownload(url, 'issues_diagram.' + typeName);
 
             return url;
         }
@@ -747,53 +553,26 @@ import storageClass from "./storage.js";
         return null;
     }
 
-    function getListExtraParams() {
-        let list = [];
-        let paths = elements.extraParamsEl.value.trim();
-
-        if (paths === '') {
-            return list;
-        }
-
-        let els = _.filter(paths.split("\n"));
-
-        els.forEach((el) => {
-            const parts = el.split(':', 2).map((v) => v.trim());
-
-            if (parts.length >= 2) {
-                list.push({label: parts[1], path: parts[0]});
-            } else {
-                list.push({label: parts[0], path: parts[0]});
-            }
-        });
-
-        // console.info('[extra params RAW]', els, list);
-
-        return list;
-    }
-
     function showIssues(data) {
-        // let outEl = document.getElementById('output');
         let tplEl = document.getElementById('issue-tpl')
         let issueTplEl = document.getElementById('issue-link-tpl')
-        let extraParams = getListExtraParams();
+        let extraParams = utils.parseExtraParams();
 
         elements.outEl.innerHTML = ''; // clear input
 
         data.issues.forEach(function (item) {
             let el = tplEl.content.cloneNode(true);
-            el.querySelector('.card-header').innerText = makeTitle(item, elements.shortIssueEl.checked, false);
+            el.querySelector('.card-header').innerText = utils.makeTitle(item, elements.shortIssueEl.checked, false);
             el.querySelector('.issue-desc').innerText = _.truncate(item.fields.description, {length: 300});
-
-            el.querySelector('.issue-self').href = makeIssueHref(item);
+            el.querySelector('.issue-self').href = utils.makeIssueHref(item);
 
             let parentEl = el.querySelector('.issue-parent');
             if (!item.fields.parent) {
                 parentEl.parentNode.removeChild(parentEl);
             } else {
                 let parentInfo = item.fields.parent;
-                parentEl.href = makeIssueHref(parentInfo);
-                parentEl.title = makeTitle(parentInfo, true, false);
+                parentEl.href = utils.makeIssueHref(parentInfo);
+                parentEl.title = utils.makeTitle(parentInfo, true, false);
             }
 
             let linksEl = el.querySelector('.issue-links');
@@ -822,8 +601,8 @@ import storageClass from "./storage.js";
                     itemEl.querySelector('.issue-label').innerText = refType;
 
                     let linkEl = itemEl.querySelector('.issue-ref');
-                    linkEl.innerText = makeTitle(issue, true, false);
-                    linkEl.href = makeIssueHref(issue);
+                    linkEl.innerText = utils.makeTitle(issue, true, false);
+                    linkEl.href = utils.makeIssueHref(issue);
 
                     linksEl.appendChild(itemEl);
                     linksCount += 1;

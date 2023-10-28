@@ -19,18 +19,6 @@ export class AppApi {
     initialize(cfg) {
         _.assign(this.config, cfg);
 
-        // if (this.config['uriBase']) {
-        //     this.config['uriBase'] = _.trimEnd(value, '/');
-        // }
-
-        this.config.dispatcher.subscribe({
-            channel: 'requests',
-            topic: 'api.listFilters',
-            callback: function onListFilters(data, envelope) {
-                console.log('[requests][api.listFilters]', data, envelope);
-            },
-        });
-
         this.instance = axios.create({
             withCredentials: true,
             headers: {
