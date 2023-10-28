@@ -1,38 +1,46 @@
 import api from "./api.js";
 
 (function () {
-    let uriBaseEl = document.getElementById('uri');
-    let userEl = document.getElementById('user');
-    let tokenEl = document.getElementById('token');
-    let actionEl = document.getElementById('action');
-    let filterEl = document.getElementById('filter');
-    let hideParentsBtn = document.getElementById('hide-parents');
-    let hideTestsBtn = document.getElementById('hide-tests');
-    let openImgEl = document.getElementById('open-image');
-    let shortIssueEl = document.getElementById('short-issue-desc');
-    let disableIconsEl = document.getElementById('disable-icons');
-    let extraParamsEl = document.getElementById('issue-extra-fields');
-    let showMatchedEl = document.getElementById('show-matched');
+    const elements = {};
+    const bs = {};
 
-    let inputSaveEl = document.getElementById('input-save-btn');
-    let inputRestoreEl = document.getElementById('input-restore-btn');
-    let inputClearEl = document.getElementById('input-clear-btn');
+    elements.uriBaseEl = document.getElementById('uri');
+    elements.userEl = document.getElementById('user');
+    elements.tokenEl = document.getElementById('token');
+    elements.filterEl = document.getElementById('filter');
+    elements.hideParentsEl = document.getElementById('hide-parents');
+    elements.hideTestsEl = document.getElementById('hide-tests');
+    elements.openImgEl = document.getElementById('open-image');
+    elements.shortIssueEl = document.getElementById('short-issue-desc');
+    elements.disableIconsEl = document.getElementById('disable-icons');
+    elements.extraParamsEl = document.getElementById('issue-extra-fields');
+    elements.showMatchedEl = document.getElementById('show-matched');
 
-    let notifyModalEl = document.getElementById('notifyModal');
-    let notifyModal = new bootstrap.Modal(notifyModalEl);
+    elements.inputSaveEl = document.getElementById('input-save-btn');
+    elements.inputRestoreEl = document.getElementById('input-restore-btn');
+    elements.inputClearEl = document.getElementById('input-clear-btn');
 
-    let inEl = document.getElementById('input');
-    let inCollapse = new bootstrap.Collapse(inEl, {toggle: false});
+    elements.notifyModalEl = document.getElementById('notifyModal');
+    bs.notifyModal = new bootstrap.Modal(elements.notifyModalEl);
 
-    let outEl = document.getElementById('output');
-    let outCollapse = new bootstrap.Collapse(outEl, {toggle: false});
+    elements.inEl = document.getElementById('input');
+    bs.inCollapse = new bootstrap.Collapse(elements.inEl, {toggle: false});
+
+    elements.outEl = document.getElementById('output');
+    bs.outCollapse = new bootstrap.Collapse(elements.outEl, {toggle: false});
 
     const eventDispatcher = postal;
 
+    eventDispatcher.subscribe({
+        channel: 'requests',
+        topic: 'notify',
+        callback: (message) => notify(message),
+    });
+
     const apiInstance = api({
-        uriBaseCallback: () => _.trimEnd(uriBaseEl.value, '/'),
-        apiUserCallback: () => userEl.value,
-        apiPasswordCallback: () => tokenEl.value,
+        uriBaseCallback: () => _.trimEnd(elements.uriBaseEl.value, '/'),
+        apiUserCallback: () => elements.userEl.value,
+        apiPasswordCallback: () => elements.tokenEl.value,
         onError: function (e) {
             console.error('[ERROR]', e);
             const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
@@ -63,13 +71,13 @@ import api from "./api.js";
                 e.stopPropagation();
                 e.preventDefault();
 
-                if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
+                if (!elements.userEl.value || !elements.tokenEl.value || !elements.uriBaseEl.value) {
                     notify('[ERROR] Input values are not defined')
 
                     return;
                 }
 
-                inCollapse.hide();
+                bs.inCollapse.hide();
 
                 eventDispatcher.publish({
                     channel: 'requests',
@@ -87,23 +95,23 @@ import api from "./api.js";
                 e.preventDefault();
                 e.stopPropagation();
 
-                let jqlQuery = _.trim(filterEl.value)
+                let jqlQuery = _.trim(elements.filterEl.value)
 
-                if (!userEl.value || !tokenEl.value || !jqlQuery) {
+                if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
                     notify('[ERROR] Input values are not defined')
 
                     return;
                 }
 
-                inCollapse.hide();
+                bs.inCollapse.hide();
 
                 apiInstance.searchIssues(jqlQuery)
                     .then((response) => showIssues(response));
             });
 
-        inputSaveEl.addEventListener('click', () => saveInput());
-        inputRestoreEl.addEventListener('click', () => restoreInput());
-        inputClearEl.addEventListener('click', () => clearInput());
+        elements.inputSaveEl.addEventListener('click', () => saveInput());
+        elements.inputRestoreEl.addEventListener('click', () => restoreInput());
+        elements.inputClearEl.addEventListener('click', () => clearInput());
 
         document.getElementById('show-diagram-btn').addEventListener('click', onShowDiagram);
         document.getElementById('main-form').addEventListener('submit', onShowDiagram);
@@ -112,9 +120,9 @@ import api from "./api.js";
             e.stopPropagation();
             e.preventDefault();
 
-            let jqlQuery = _.trim(filterEl.value)
+            let jqlQuery = _.trim(elements.filterEl.value)
 
-            if (!userEl.value || !tokenEl.value || !jqlQuery) {
+            if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
                 notify('[ERROR] Input values are not defined')
 
                 return;
@@ -169,7 +177,7 @@ import api from "./api.js";
                 e.preventDefault();
                 e.stopPropagation();
 
-                const diagramContent = inEl.value.trim();
+                const diagramContent = elements.inEl.value.trim();
                 if (!diagramContent) {
                     notify('Click "Show diagram" button or edit manually "Input" before trying to render');
 
@@ -177,10 +185,10 @@ import api from "./api.js";
                 }
 
                 try {
-                    outCollapse.show();
+                    bs.outCollapse.show();
                     mermaid.render('mermaid', diagramContent).then((v) => {
-                        outEl.innerHTML = v.svg;
-                        // console.log('[RENDER] ', outEl.innerHTML, diagramContent);
+                        elements.outEl.innerHTML = v.svg;
+                        // console.log('[RENDER] ', elements.outEl.innerHTML, diagramContent);
                     });
                 } catch (e) {
                     console.error('[ERROR] ', e);
@@ -190,17 +198,17 @@ import api from "./api.js";
 
         function saveInput() {
             let data = {
-                uri: uriBaseEl.value,
-                user: userEl.value,
-                token: tokenEl.value,
-                filter: filterEl.value,
-                hideParents: hideParentsBtn.checked,
-                hideTests: hideTestsBtn.checked,
-                openImage: openImgEl.checked,
-                shortIssue: shortIssueEl.checked,
-                disableIcons: disableIconsEl.checked,
-                extraParams: extraParamsEl.value,
-                showMatched: showMatchedEl.checked,
+                uri: elements.uriBaseEl.value,
+                user: elements.userEl.value,
+                token: elements.tokenEl.value,
+                filter: elements.filterEl.value,
+                hideParents: elements.hideParentsEl.checked,
+                hideTests: elements.hideTestsEl.checked,
+                openImage: elements.openImgEl.checked,
+                shortIssue: elements.shortIssueEl.checked,
+                disableIcons: elements.disableIconsEl.checked,
+                extraParams: elements.extraParamsEl.value,
+                showMatched: elements.showMatchedEl.checked,
             };
 
             localStorage.setItem('input', JSON.stringify(data));
@@ -221,103 +229,103 @@ import api from "./api.js";
 
             input = JSON.parse(input)
 
-            uriBaseEl.value = input.uri
-            userEl.value = input.user
-            tokenEl.value = input.token
-            filterEl.value = input.filter
-            hideParentsBtn.checked = !!input.hideParents;
-            hideTestsBtn.checked = !!input.hideTests;
-            openImgEl.checked = !!input.openImage;
-            shortIssueEl.checked = !!input.shortIssue;
-            disableIconsEl.checked = !!input.disableIcons;
-            extraParamsEl.value = !!input.extraParams ? input.extraParams : '';
-            showMatchedEl.checked = !!input.showMatched;
+            elements.uriBaseEl.value = input.uri
+            elements.userEl.value = input.user
+            elements.tokenEl.value = input.token
+            elements.filterEl.value = input.filter
+            elements.hideParentsEl.checked = !!input.hideParents;
+            elements.hideTestsEl.checked = !!input.hideTests;
+            elements.openImgEl.checked = !!input.openImage;
+            elements.shortIssueEl.checked = !!input.shortIssue;
+            elements.disableIconsEl.checked = !!input.disableIcons;
+            elements.extraParamsEl.value = !!input.extraParams ? input.extraParams : '';
+            elements.showMatchedEl.checked = !!input.showMatched;
         }
 
         function clearInput() {
             localStorage.clear();
 
-            uriBaseEl.value = '{{ .uri }}'
-            userEl.value = '{{ .user }}'
-            tokenEl.value = '{{ .token }}'
-            filterEl.value = ''
-            hideParentsBtn.checked = false;
-            hideTestsBtn.checked = false;
-            openImgEl.checked = false;
-            shortIssueEl.checked = false;
-            extraParamsEl.value = '';
-            showMatchedEl.checked = false;
+            elements.uriBaseEl.value = '{{ .uri }}'
+            elements.userEl.value = '{{ .user }}'
+            elements.tokenEl.value = '{{ .token }}'
+            elements.filterEl.value = ''
+            elements.hideParentsEl.checked = false;
+            elements.hideTestsEl.checked = false;
+            elements.openImgEl.checked = false;
+            elements.shortIssueEl.checked = false;
+            elements.extraParamsEl.value = '';
+            elements.showMatchedEl.checked = false;
 
-            notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
-            notifyModal.show();
+            elements.notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
+            bs.notifyModal.show();
         }
 
         restoreInput(true);
     });
 
     function notify(message) {
-        notifyModalEl.querySelector('.modal-body').innerText = message
-        notifyModal.show();
+        elements.notifyModalEl.querySelector('.modal-body').innerText = message
+        bs.notifyModal.show();
     }
 
-    function downloadDiagramAsPng() {
-        let svgEl = document.querySelector('svg');
-        if (!svgEl) {
-            notify('Click "Show diagram" button before trying to export');
-
-            return;
-        }
-
-        svgEl.crossOrigin = 'anonymous';
-        const svgString = (new XMLSerializer()).serializeToString(svgEl);
-        const svgBlob = new Blob([svgString], {
-            type: 'image/svg+xml;charset=utf-8'
-        });
-        svgBlob.crossOrigin = 'anonymous';
-
-        const DOMURL = window.URL || window.webkitURL || window;
-        const url = DOMURL.createObjectURL(svgBlob);
-
-        const image = new Image();
-        image.width = svgEl.width.baseVal.value;
-        image.height = svgEl.height.baseVal.value;
-
-        image.onload = function () {
-            const canvas = document.createElement('CANVAS');
-            // const canvas = document.querySelector('canvas');
-
-            canvas.width = image.width;
-            canvas.height = image.height;
-
-            try {
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(image, 0, 0);
-                DOMURL.revokeObjectURL(url);
-
-                const imgURI = canvas
-                    .toDataURL('image/svg')
-                    .replace('image/svg', 'image/octet-stream');
-
-                triggerDownload(imgURI, 'issues_diagram.png');
-            } catch (e) {
-                console.error('[ERROR] ', e, image);
-                notify('[ERROR] ' + e.message + "\n\nTry downloading by righ clicking the image");
-
-                outEl.innerHTML = '';
-                outEl.appendChild(canvas); // stupid dirty hack...
-            }
-
-        };
-
-        image.crossOrigin = 'anonymous';
-        image.referrerPolicy = 'no-referrer';
-        image.src = url;
-    }
+    // function downloadDiagramAsPng() {
+    //     let svgEl = document.querySelector('svg');
+    //     if (!svgEl) {
+    //         notify('Click "Show diagram" button before trying to export');
+    //
+    //         return;
+    //     }
+    //
+    //     svgEl.crossOrigin = 'anonymous';
+    //     const svgString = (new XMLSerializer()).serializeToString(svgEl);
+    //     const svgBlob = new Blob([svgString], {
+    //         type: 'image/svg+xml;charset=utf-8'
+    //     });
+    //     svgBlob.crossOrigin = 'anonymous';
+    //
+    //     const DOMURL = window.URL || window.webkitURL || window;
+    //     const url = DOMURL.createObjectURL(svgBlob);
+    //
+    //     const image = new Image();
+    //     image.width = svgEl.width.baseVal.value;
+    //     image.height = svgEl.height.baseVal.value;
+    //
+    //     image.onload = function () {
+    //         const canvas = document.createElement('CANVAS');
+    //         // const canvas = document.querySelector('canvas');
+    //
+    //         canvas.width = image.width;
+    //         canvas.height = image.height;
+    //
+    //         try {
+    //             const ctx = canvas.getContext('2d');
+    //             ctx.drawImage(image, 0, 0);
+    //             DOMURL.revokeObjectURL(url);
+    //
+    //             const imgURI = canvas
+    //                 .toDataURL('image/svg')
+    //                 .replace('image/svg', 'image/octet-stream');
+    //
+    //             triggerDownload(imgURI, 'issues_diagram.png');
+    //         } catch (e) {
+    //             console.error('[ERROR] ', e, image);
+    //             notify('[ERROR] ' + e.message + "\n\nTry downloading by righ clicking the image");
+    //
+    //             elements.outEl.innerHTML = '';
+    //             elements.outEl.appendChild(canvas); // stupid dirty hack...
+    //         }
+    //
+    //     };
+    //
+    //     image.crossOrigin = 'anonymous';
+    //     image.referrerPolicy = 'no-referrer';
+    //     image.src = url;
+    // }
 
     let triggerDownload = (imgURI, fileName) => {
         let a = document.createElement('a')
 
-        if (!openImgEl.checked) {
+        if (!elements.openImgEl.checked) {
             a.setAttribute('download', !!fileName ? fileName : 'issues_diagram.svg')
         }
         a.setAttribute('href', imgURI)
@@ -326,29 +334,29 @@ import api from "./api.js";
         a.click()
     }
 
-    function downloadDiagramAsSvg() {
-        // var btn = document.querySelector('button')
-        var svg = document.querySelector('svg')
-
-        if (!svg) {
-            notify('Click "Show diagram" button before trying to export');
-
-            return;
-        }
-
-        let data = (new XMLSerializer()).serializeToString(svg)
-        let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
-        let url = URL.createObjectURL(svgBlob)
-
-        triggerDownload(url, 'issues_diagram.svg')
-    }
+    // function downloadDiagramAsSvg() {
+    //     // var btn = document.querySelector('button')
+    //     var svg = document.querySelector('svg')
+    //
+    //     if (!svg) {
+    //         notify('Click "Show diagram" button before trying to export');
+    //
+    //         return;
+    //     }
+    //
+    //     let data = (new XMLSerializer()).serializeToString(svg)
+    //     let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
+    //     let url = URL.createObjectURL(svgBlob)
+    //
+    //     triggerDownload(url, 'issues_diagram.svg')
+    // }
 
     function showDiagram(data) {
-        outEl.innerHTML = '';
+        elements.outEl.innerHTML = '';
 
         if (!data) {
             notify('No issues found for the query');
-            outCollapse.show();
+            bs.outCollapse.show();
 
             return;
         }
@@ -360,14 +368,14 @@ import api from "./api.js";
         let tplEl = document.getElementById('mermaid-tpl');
         let el = tplEl.content.cloneNode(true);
 
-        outEl.appendChild(el.firstElementChild);
-        outCollapse.show();
+        elements.outEl.appendChild(el.firstElementChild);
+        bs.outCollapse.show();
 
         makeDiagram(data.issues).then(function (diagram) {
             mermaid.render('mermaid', diagram).then((v) => {
-                inEl.value = diagram
-                outEl.innerHTML = v.svg;
-                // console.log('[RENDER]', outEl.innerHTML);
+                elements.inEl.value = diagram
+                elements.outEl.innerHTML = v.svg;
+                // console.log('[RENDER]', elements.outEl.innerHTML);
             });
         });
     }
@@ -433,12 +441,12 @@ import api from "./api.js";
     }
 
     function makeNode(item) {
-        let title = makeTitle(item, shortIssueEl.checked, true);
+        let title = makeTitle(item, elements.shortIssueEl.checked, true);
 
         let left, right;
-        let fillColor;
+        // let fillColor;
         let styles = []
-        const strokeWidth = shortIssueEl.checked ? '2px' : '4px'
+        const strokeWidth = elements.shortIssueEl.checked ? '2px' : '4px'
 
         switch (_.get(item, 'fields.status.name')) {
             case 'To Do':
@@ -501,7 +509,7 @@ import api from "./api.js";
 
         let out = []
 
-        if (!shortIssueEl.checked) {
+        if (!elements.shortIssueEl.checked) {
             out.push(`    ${item.key}${left}"\`${title}`);
 
             const estimate = makeEstimate(item)
@@ -543,8 +551,8 @@ import api from "./api.js";
     }
 
     function makeDiagram(issues) {
-        let hideParentsBtn = document.getElementById('hide-parents');
-        let hideTestsBtn = document.getElementById('hide-tests');
+        // let hideParentsEl = document.getElementById('hide-parents');
+        // let hideTestsEl = document.getElementById('hide-tests');
         let out = [
             '---',
             'title: Issues Flowchart at ' + (new Date()).toLocaleString(),
@@ -570,7 +578,7 @@ import api from "./api.js";
         let issueLinks = []
         let refKeys = [];
         let addRefIssue = function (type, from, to) {
-            if (hideTestsBtn.checked && (_.get(from, 'fields.issuetype.name') === 'Test' || _.get(to, 'fields.issuetype.name') === 'Test')) {
+            if (elements.hideTestsEl.checked && (_.get(from, 'fields.issuetype.name') === 'Test' || _.get(to, 'fields.issuetype.name') === 'Test')) {
                 return; // skip test issue refs from display
             }
 
@@ -614,17 +622,17 @@ import api from "./api.js";
         issues.forEach(function (item) {
             if (
                 item.fields.parent &&
-                !hideParentsBtn.checked &&
-                (!showMatchedEl.checked || issueKeys.includes(item.fields.parent.key))
+                !elements.hideParentsEl.checked &&
+                (!elements.showMatchedEl.checked || issueKeys.includes(item.fields.parent.key))
             ) {
-                // if (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
+                // if (!elements.hideTestsEl.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
                 //     addIssueDesc(item.fields.parent);
                 // }
 
                 if (
-                    !hideParentsBtn.checked &&
+                    !elements.hideParentsEl.checked &&
                     !issueLinks.includes(item.fields.parent.key) &&
-                    (!hideTestsBtn.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test')
+                    (!elements.hideTestsEl.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test')
                 ) {
                     issueLinks.push(item.fields.parent.key);
                 }
@@ -646,7 +654,7 @@ import api from "./api.js";
                     }
 
                     if (!issueLinks.includes(issue.key)) {
-                        if (showMatchedEl.checked && !issueKeys.includes(issue.key)) {
+                        if (elements.showMatchedEl.checked && !issueKeys.includes(issue.key)) {
                             return; // skip adding references to not matched issue refs
                         }
 
@@ -657,7 +665,7 @@ import api from "./api.js";
                         return; // if references parent issue then skip
                     }
 
-                    // if (!hideTestsBtn.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
+                    // if (!elements.hideTestsEl.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
                     //     addIssueDesc(issue);
                     // }
 
@@ -672,7 +680,7 @@ import api from "./api.js";
             return out.join("\n");
         };
 
-        if (!showMatchedEl.checked) {
+        if (!elements.showMatchedEl.checked) {
             const missingIssuesByRef = _.difference(issueLinks, issueKeys);
             if (missingIssuesByRef.length > 0) {
                 console.info('[missing by link keys]', missingIssuesByRef);
@@ -680,7 +688,7 @@ import api from "./api.js";
                 return apiInstance.searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
                     .then((response) => {
                         response.issues.forEach((item) => {
-                            if (!hideTestsBtn.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
+                            if (!elements.hideTestsEl.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
                                 addIssueDesc(item);
                             }
                         })
@@ -692,9 +700,9 @@ import api from "./api.js";
     }
 
     function showFilters(data) {
-        outEl.innerHTML = '';
+        elements.outEl.innerHTML = '';
         if (!data) {
-            outCollapse.show();
+            bs.outCollapse.show();
 
             return;
         }
@@ -710,16 +718,16 @@ import api from "./api.js";
             el.querySelector('.filter-search').href = item.searchUrl;
             el.querySelector('.filter-issues').href = item.viewUrl;
 
-            outEl.appendChild(el.firstElementChild)
+            elements.outEl.appendChild(el.firstElementChild)
         });
 
-        outCollapse.show();
+        bs.outCollapse.show();
     }
 
     function makeTitle(issue, shortIssue, useIcons) {
 
         let title = '';
-        if (!!useIcons && !disableIconsEl.checked) {
+        if (!!useIcons && !elements.disableIconsEl.checked) {
             let symbol;
             switch (_.get(issue, 'fields.status.name')) {
                 case 'To Do':
@@ -776,19 +784,19 @@ import api from "./api.js";
         return jiraUri + '/browse/' + issue.key;
     }
 
-    function textEncode(str) {
-        if (window.TextEncoder) {
-            return new TextEncoder('utf-8').encode(str);
-        }
-
-        var utf8 = unescape(encodeURIComponent(str));
-        var result = new Uint8Array(utf8.length);
-        for (var i = 0; i < utf8.length; i++) {
-            result[i] = utf8.charCodeAt(i);
-        }
-
-        return result;
-    }
+    // function textEncode(str) {
+    //     if (window.TextEncoder) {
+    //         return new TextEncoder('utf-8').encode(str);
+    //     }
+    //
+    //     var utf8 = unescape(encodeURIComponent(str));
+    //     var result = new Uint8Array(utf8.length);
+    //     for (var i = 0; i < utf8.length; i++) {
+    //         result[i] = utf8.charCodeAt(i);
+    //     }
+    //
+    //     return result;
+    // }
 
     function makeMermaidUrl(source, type) {
         let data = JSON.stringify({
@@ -803,7 +811,7 @@ import api from "./api.js";
         const _hasBuffer = typeof Buffer == "function";
 
         const _fromCC = String.fromCharCode.bind(String);
-        const _mkUriSafe = t => t.replace(/=/g, "").replace(/[+\/]/g, e => e == "+" ? "-" : "_");
+        const _mkUriSafe = t => t.replace(/=/g, "").replace(/[+\/]/g, e => e === "+" ? "-" : "_");
 
         // const _fromUint8Array = t => Buffer.from(t).toString("base64")
         const _fromUint8Array = _hasBuffer ? t => Buffer.from(t).toString("base64") : t => {
@@ -827,20 +835,20 @@ import api from "./api.js";
         return 'https://mermaid.ink/img/pako:' + compressed + '?type=' + type;
     }
 
-    function makeKrokiUrl(source, type, diagramType = 'mermaid') {
-        const compressed = window.btoa(pako.deflate(textEncode(source), {level: 9, to: 'string'}))
-            .replace(/\+/g, '-')
-            .replace(/\//g, '_');
-
-        // Kroki usage - good for different diagrams
-        var urlPath = diagramType + '/' + type + '/' + compressed;
-
-        return 'https://kroki.io/' + urlPath;
-    }
+    // function makeKrokiUrl(source, type, diagramType = 'mermaid') {
+    //     const compressed = window.btoa(pako.deflate(textEncode(source), {level: 9, to: 'string'}))
+    //         .replace(/\+/g, '-')
+    //         .replace(/\//g, '_');
+    //
+    //     // Kroki usage - good for different diagrams
+    //     var urlPath = diagramType + '/' + type + '/' + compressed;
+    //
+    //     return 'https://kroki.io/' + urlPath;
+    // }
 
     function makeDiagramUrl(type) {
-        let url;
-        let source = inEl.value.trim();
+        // let url;
+        let source = elements.inEl.value.trim();
         const typeName = !!type ? type : 'svg';
 
         // if (typeName === 'svg') {
@@ -850,7 +858,7 @@ import api from "./api.js";
 
         // console.log('[SRC]', source)
 
-        if (source != '') {
+        if (source !== '') {
             const url = makeMermaidUrl(source, typeName)
             // console.log('[URL]', url);
 
@@ -866,7 +874,7 @@ import api from "./api.js";
 
     function getListExtraParams() {
         let list = [];
-        let paths = extraParamsEl.value.trim();
+        let paths = elements.extraParamsEl.value.trim();
 
         if (paths === '') {
             return list;
@@ -890,16 +898,16 @@ import api from "./api.js";
     }
 
     function showIssues(data) {
-        let outEl = document.getElementById('output');
+        // let outEl = document.getElementById('output');
         let tplEl = document.getElementById('issue-tpl')
         let issueTplEl = document.getElementById('issue-link-tpl')
         let extraParams = getListExtraParams();
 
-        outEl.innerHTML = ''; // clear input
+        elements.outEl.innerHTML = ''; // clear input
 
         data.issues.forEach(function (item) {
             let el = tplEl.content.cloneNode(true);
-            el.querySelector('.card-header').innerText = makeTitle(item, shortIssueEl.checked, false);
+            el.querySelector('.card-header').innerText = makeTitle(item, elements.shortIssueEl.checked, false);
             el.querySelector('.issue-desc').innerText = _.truncate(item.fields.description, {length: 300});
 
             el.querySelector('.issue-self').href = makeIssueHref(item);
@@ -972,10 +980,9 @@ import api from "./api.js";
                 extraParamsContainer.parentNode.removeChild(extraParamsContainer);
             }
 
-
-            outEl.appendChild(el.firstElementChild)
+            elements.outEl.appendChild(el.firstElementChild)
         });
 
-        outCollapse.show();
+        bs.outCollapse.show();
     }
 })()
