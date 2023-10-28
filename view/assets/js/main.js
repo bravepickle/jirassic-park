@@ -1,10 +1,6 @@
 import api from "./api.js";
 
-// console.log('[module.api]', api);
-
 (function() {
-    let jiraUri = '{{ .jira_uri }}';
-
     let uriBaseEl = document.getElementById('uri');
     let userEl = document.getElementById('user');
     let tokenEl = document.getElementById('token');
@@ -26,15 +22,25 @@ import api from "./api.js";
     let notifyModal = new bootstrap.Modal(notifyModalEl);
 
     let inEl = document.getElementById('input');
-    var inCollapse = new bootstrap.Collapse(inEl, {toggle: false});
+    let inCollapse = new bootstrap.Collapse(inEl, {toggle: false});
 
     let outEl = document.getElementById('output');
-    var outCollapse = new bootstrap.Collapse(outEl, {toggle: false});
+    let outCollapse = new bootstrap.Collapse(outEl, {toggle: false});
+
+    const eventDispatcher = postal;
 
     const apiInstance = api({
         uriBaseCallback: () => _.trimEnd(uriBaseEl.value, '/'),
-        apiUserCallack: () => userEl.value,
+        apiUserCallback: () => userEl.value,
         apiPasswordCallback: () => tokenEl.value,
+        onError: function (e) {
+            console.error('[ERROR]', e);
+            const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
+            notify('[ERROR] ' + msg.join("\n"));
+
+            return Promise.reject(e);
+        },
+        dispatcher: eventDispatcher,
     });
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -64,14 +70,15 @@ import api from "./api.js";
 
             inCollapse.hide();
 
+            eventDispatcher.publish({
+                channel: 'requests',
+                topic: 'api.listFilters',
+                data: {foo: 'bar'},
+            });
+
             apiInstance
                 .listFilters()
-                .then((response) => showFilters(response.data))
-                .catch(function (e) {
-                    console.error(e);
-                    const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
-                    notify('[ERROR] ' + msg.join("\n"));
-                });
+                .then((response) => showFilters(response));
         });
 
         document.getElementById('show-tasks-btn').addEventListener('click', function onShowTasks(e) {
@@ -88,13 +95,13 @@ import api from "./api.js";
 
             inCollapse.hide();
 
-            searchIssues(jqlQuery).then((response) => showIssues(response.data))
+            apiInstance.searchIssues(jqlQuery)
+                .then((response) => showIssues(response));
         });
 
         inputSaveEl.addEventListener('click', () => saveInput());
         inputRestoreEl.addEventListener('click', () => restoreInput());
         inputClearEl.addEventListener('click', () => clearInput());
-
 
         document.getElementById('show-diagram-btn').addEventListener('click', onShowDiagram);
         document.getElementById('main-form').addEventListener('submit', onShowDiagram);
@@ -113,12 +120,7 @@ import api from "./api.js";
 
             apiInstance
                 .searchIssues(jqlQuery)
-                .then((response) => showDiagram(response.data))
-                .catch(function (e) {
-                    console.error(e);
-                    const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
-                    notify('[ERROR] ' + msg.join("\n"));
-                });
+                .then((response) => showDiagram(response));
         }
 
         document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagramPng(e) {
@@ -670,9 +672,9 @@ import api from "./api.js";
             if (missingIssuesByRef.length > 0) {
                 console.info('[missing by link keys]', missingIssuesByRef);
 
-                return searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
+                return apiInstance.searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
                     .then((response) => {
-                        response.data.issues.forEach((item) => {
+                        response.issues.forEach((item) => {
                             if (!hideTestsBtn.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
                                 addIssueDesc(item);
                             }
@@ -683,17 +685,6 @@ import api from "./api.js";
 
         return new Promise((resolve) => resolve(finished()));
     }
-
-    function searchIssues(jqlQuery) {
-        return apiInstance
-            .searchIssues(jqlQuery)
-            .catch(function (e) {
-                console.error(e);
-                const msg = [e.message].concat(_.get(e, 'response.data.errorMessages', []));
-                notify('[ERROR] ' + msg.join("\n"));
-            });
-    }
-
 
     function showFilters(data) {
         outEl.innerHTML = '';

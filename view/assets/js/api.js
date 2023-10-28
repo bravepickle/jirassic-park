@@ -1,9 +1,16 @@
 export class AppApi {
     config = {
         uriBaseCallback: undefined,
-        apiUserCallack: undefined,
+        apiUserCallback: undefined,
         apiPasswordCallback: undefined,
+        onError: undefined,
+        dispatcher: postal,
     };
+
+    /**
+     * @type {null,Axios}
+     */
+    instance = null;
 
     constructor(cfg) {
         this.initialize(cfg);
@@ -16,28 +23,58 @@ export class AppApi {
         //     this.config['uriBase'] = _.trimEnd(value, '/');
         // }
 
+        this.config.dispatcher.subscribe({
+            channel: 'requests',
+            topic: 'api.listFilters',
+            callback: function onListFilters(data, envelope) {
+                console.log('[requests][api.listFilters]', data, envelope);
+            },
+        });
+
+        this.instance = axios.create({
+            withCredentials: true,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        this.instance.interceptors.response.use((response) => {
+            if (!response.data) {
+                return null;
+            }
+
+            // Any status code that lie within the range of 2xx cause this function to trigger
+            // Do something with response data
+            return response.data;
+        }, (error) => {
+            if (this.config.onError) {
+                this.config.onError(error);
+            }
+
+            // Any status codes that falls outside the range of 2xx cause this function to trigger
+            // Do something with response error
+            return Promise.reject(error);
+        });
+
         return this;
     }
 
     makeRequest(uri, method = 'get', params = undefined) {
         let cfg = {
-            method: method,
-            url: this.config.uriBaseCallback() + uri,
+            baseURL: this.config.uriBaseCallback(),
             auth: {
-                username: this.config.apiUserCallack(),
+                username: this.config.apiUserCallback(),
                 password: this.config.apiPasswordCallback(),
             },
-            withCredentials: true,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-            },
+            method: method,
+            url: uri,
         };
 
         if (params) {
             cfg.params = params;
         }
 
-        return axios(cfg);
+        return this.instance.request(cfg);
     }
 
     listFilters() {
@@ -46,19 +83,6 @@ export class AppApi {
 
     searchIssues(jqlQuery) {
         return this.makeRequest('/search', 'get', {jql: jqlQuery});
-        // return axios({
-        //     method: 'get',
-        //     url: this.config.uriBaseCallback() + '/search',
-        //     params: {jql: jqlQuery},
-        //     auth: {
-        //         username: userEl.value,
-        //         password: tokenEl.value
-        //     },
-        //     withCredentials: true,
-        //     headers: {
-        //         'X-Requested-With': 'XMLHttpRequest',
-        //     },
-        // });
     }
 }
 
