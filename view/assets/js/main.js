@@ -2,6 +2,7 @@ import api from "./api.js";
 import StorageProcessor from "./storage.js";
 import UtilsClass from "./utils.js";
 import GraphClass from "./graph.js";
+import Viewer from "./viewer.js";
 
 (function () {
     const elements = {};
@@ -34,12 +35,6 @@ import GraphClass from "./graph.js";
 
     const eventDispatcher = postal;
 
-    eventDispatcher.subscribe({
-        channel: 'requests',
-        topic: 'notify',
-        callback: (message) => notify(message),
-    });
-
     const apiInstance = api({
         uriBaseCallback: () => _.trimEnd(elements.uriBaseEl.value, '/'),
         apiUserCallback: () => elements.userEl.value,
@@ -66,6 +61,7 @@ import GraphClass from "./graph.js";
 
     const utils = new UtilsClass(elements, {jiraUri: jiraUri});
     const graph = new GraphClass(eventDispatcher, utils, elements, apiInstance);
+    const view = new Viewer(elements, utils, bs, graph, eventDispatcher);
 
     document.addEventListener('DOMContentLoaded', function () {
         mermaid.initialize({
@@ -92,7 +88,7 @@ import GraphClass from "./graph.js";
                 }
 
                 bs.inCollapse.hide();
-                apiInstance.listFilters().then((response) => showFilters(response));
+                apiInstance.listFilters().then((response) => view.showFilters(response));
             });
 
         document.getElementById('show-tasks-btn')
@@ -108,7 +104,7 @@ import GraphClass from "./graph.js";
                 }
 
                 bs.inCollapse.hide();
-                apiInstance.searchIssues(jqlQuery).then((response) => showIssues(response));
+                apiInstance.searchIssues(jqlQuery).then((response) => view.showIssues(response));
             });
 
         elements.inputSaveEl.addEventListener('click', () => storage.saveInput());
@@ -135,7 +131,7 @@ import GraphClass from "./graph.js";
                 return;
             }
 
-            apiInstance.searchIssues(jqlQuery).then((response) => showDiagram(response));
+            apiInstance.searchIssues(jqlQuery).then((response) => view.showDiagram(response));
         }
 
         document.getElementById('download-diagram-png-btn')
@@ -194,148 +190,10 @@ import GraphClass from "./graph.js";
     });
 
     function notify(message) {
-        elements.notifyModalEl.querySelector('.modal-body').innerText = message
-        bs.notifyModal.show();
-    }
-
-    function showDiagram(data) {
-        elements.outEl.innerHTML = '';
-
-        if (!data) {
-            notify('No issues found for the query');
-            bs.outCollapse.show();
-
-            return;
-        }
-
-        if (data.total >= data.maxResults) {
-            notify('Reached page items limit. Not all issues will be displayed. Update JQL query if possible');
-        }
-
-        let tplEl = document.getElementById('mermaid-tpl');
-        let el = tplEl.content.cloneNode(true);
-
-        elements.outEl.appendChild(el.firstElementChild);
-        bs.outCollapse.show();
-
-        graph.makeDiagram(data.issues).then(function (diagram) {
-            mermaid.render('mermaid', diagram).then((v) => {
-                elements.inEl.value = diagram
-                elements.outEl.innerHTML = v.svg;
-                // console.log('[RENDER]', elements.outEl.innerHTML);
-            });
+        eventDispatcher.publish({
+            channel: 'requests',
+            topic: 'notify',
+            data: message,
         });
-    }
-
-    function showFilters(data) {
-        elements.outEl.innerHTML = '';
-        if (!data) {
-            bs.outCollapse.show();
-
-            return;
-        }
-
-        let tplEl = document.getElementById('filter-tpl');
-
-        data.forEach(function (item) {
-            let el = tplEl.content.cloneNode(true)
-            el.querySelector('.card-title').innerText = '[' + item.id + '] ' + item.name;
-            el.querySelector('.filter-desc').innerText = item.description;
-            el.querySelector('.filter-code').innerText = item.jql;
-            el.querySelector('.filter-self').href = item.self;
-            el.querySelector('.filter-search').href = item.searchUrl;
-            el.querySelector('.filter-issues').href = item.viewUrl;
-
-            elements.outEl.appendChild(el.firstElementChild)
-        });
-
-        bs.outCollapse.show();
-    }
-
-    function showIssues(data) {
-        let tplEl = document.getElementById('issue-tpl')
-        let issueTplEl = document.getElementById('issue-link-tpl')
-        let extraParams = utils.parseExtraParams();
-
-        elements.outEl.innerHTML = ''; // clear input
-
-        data.issues.forEach(function (item) {
-            let el = tplEl.content.cloneNode(true);
-            el.querySelector('.card-header').innerText = utils.makeTitle(item, elements.shortIssueEl.checked, false);
-            el.querySelector('.issue-desc').innerText = _.truncate(item.fields.description, {length: 300});
-            el.querySelector('.issue-self').href = utils.makeIssueHref(item);
-
-            let parentEl = el.querySelector('.issue-parent');
-            if (!item.fields.parent) {
-                parentEl.parentNode.removeChild(parentEl);
-            } else {
-                let parentInfo = item.fields.parent;
-                parentEl.href = utils.makeIssueHref(parentInfo);
-                parentEl.title = utils.makeTitle(parentInfo, true, false);
-            }
-
-            let linksEl = el.querySelector('.issue-links');
-
-            let linksCount = 0;
-            if (item.fields.issuelinks && item.fields.issuelinks.length > 0) {
-                item.fields.issuelinks.forEach(function (ref) {
-                    let issue;
-                    let refType;
-
-                    if (ref.outwardIssue) {
-                        issue = ref.outwardIssue;
-                        refType = ref.type.outward;
-                    } else {
-                        issue = ref.inwardIssue;
-                        refType = ref.type.inward;
-                    }
-
-                    if (_.get(item, 'fields.parent.id') === issue.id) {
-                        return; // if references parent issue then skip
-                    }
-
-                    let itemEl = issueTplEl.content.cloneNode(true);
-
-
-                    itemEl.querySelector('.issue-label').innerText = refType;
-
-                    let linkEl = itemEl.querySelector('.issue-ref');
-                    linkEl.innerText = utils.makeTitle(issue, true, false);
-                    linkEl.href = utils.makeIssueHref(issue);
-
-                    linksEl.appendChild(itemEl);
-                    linksCount += 1;
-                });
-            }
-
-            if (linksCount === 0) {
-                linksEl.parentNode.removeChild(linksEl);
-
-                let refHeaderEl = el.querySelector('.issue-ref-header');
-                refHeaderEl.parentNode.removeChild(refHeaderEl);
-            }
-
-            let extraParamsContainer = el.querySelector('.issue-extra');
-            if (extraParams.length > 0) {
-                extraParams.forEach((param) => {
-                    let subEl = document.createElement('DIV');
-                    subEl.classList.add('row', 'mb-2');
-                    let val = _.get(item, param.path);
-                    if (typeof val === 'object') {
-                        val = JSON.stringify(val);
-                    }
-
-                    subEl.innerHTML = `<div class="col-2"><strong>${param.label}</strong></div><div class="col-10">${val}</div>`;
-
-                    extraParamsContainer.appendChild(subEl);
-                });
-            } else {
-                extraParamsContainer.parentNode.removeChild(extraParamsContainer);
-            }
-
-            elements.outEl.appendChild(el.firstElementChild)
-        });
-
-        bs.outCollapse.show();
     }
 })()
