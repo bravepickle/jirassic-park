@@ -1,6 +1,6 @@
 import api from "./api.js";
 
-(function() {
+(function () {
     let uriBaseEl = document.getElementById('uri');
     let userEl = document.getElementById('user');
     let tokenEl = document.getElementById('token');
@@ -48,7 +48,7 @@ import api from "./api.js";
 
         mermaid.initialize({
             startOnLoad: false,
-            flowchart: { useMaxWidth: true, htmlLabels: true },
+            flowchart: {useMaxWidth: true, htmlLabels: true},
             securityLevel: 'loose',
             // theme: 'base',
             // theme: 'forest',
@@ -58,46 +58,48 @@ import api from "./api.js";
         //     width: 100%
         // };
 
-        document.getElementById('list-filters-btn').addEventListener('click', function onListFiltersClick(e) {
-            e.stopPropagation();
-            e.preventDefault();
+        document.getElementById('list-filters-btn')
+            .addEventListener('click', function onListFiltersClick(e) {
+                e.stopPropagation();
+                e.preventDefault();
 
-            if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
-                notify('[ERROR] Input values are not defined')
+                if (!userEl.value || !tokenEl.value || !uriBaseEl.value) {
+                    notify('[ERROR] Input values are not defined')
 
-                return;
-            }
+                    return;
+                }
 
-            inCollapse.hide();
+                inCollapse.hide();
 
-            eventDispatcher.publish({
-                channel: 'requests',
-                topic: 'api.listFilters',
-                data: {foo: 'bar'},
+                eventDispatcher.publish({
+                    channel: 'requests',
+                    topic: 'api.listFilters',
+                    data: {foo: 'bar'},
+                });
+
+                apiInstance
+                    .listFilters()
+                    .then((response) => showFilters(response));
             });
 
-            apiInstance
-                .listFilters()
-                .then((response) => showFilters(response));
-        });
+        document.getElementById('show-tasks-btn')
+            .addEventListener('click', function onShowTasks(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-        document.getElementById('show-tasks-btn').addEventListener('click', function onShowTasks(e) {
-            e.preventDefault();
-            e.stopPropagation();
+                let jqlQuery = _.trim(filterEl.value)
 
-            let jqlQuery = _.trim(filterEl.value)
+                if (!userEl.value || !tokenEl.value || !jqlQuery) {
+                    notify('[ERROR] Input values are not defined')
 
-            if (!userEl.value || !tokenEl.value || !jqlQuery) {
-                notify('[ERROR] Input values are not defined')
+                    return;
+                }
 
-                return;
-            }
+                inCollapse.hide();
 
-            inCollapse.hide();
-
-            apiInstance.searchIssues(jqlQuery)
-                .then((response) => showIssues(response));
-        });
+                apiInstance.searchIssues(jqlQuery)
+                    .then((response) => showIssues(response));
+            });
 
         inputSaveEl.addEventListener('click', () => saveInput());
         inputRestoreEl.addEventListener('click', () => restoreInput());
@@ -123,31 +125,33 @@ import api from "./api.js";
                 .then((response) => showDiagram(response));
         }
 
-        document.getElementById('download-diagram-png-btn').addEventListener('click', function onShowDiagramPng(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        document.getElementById('download-diagram-png-btn')
+            .addEventListener('click', function onShowDiagramPng(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-            try {
-                makeDiagramUrl('png');
-                // downloadDiagramAsPng();
-            } catch (e) {
-                console.error('[ERROR] ', e);
-                notify('[ERROR] ' + e.message);
-            }
-        });
+                try {
+                    makeDiagramUrl('png');
+                    // downloadDiagramAsPng();
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
 
-        document.getElementById('download-diagram-svg-btn').addEventListener('click', function onShowDiagramSvg(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        document.getElementById('download-diagram-svg-btn')
+            .addEventListener('click', function onShowDiagramSvg(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-            try {
-                // TODO: cleanup font awesome icons (fa:), links (click)
-                makeDiagramUrl('svg');
-            } catch (e) {
-                console.error('[ERROR] ', e);
-                notify('[ERROR] ' + e.message);
-            }
-        });
+                try {
+                    // TODO: cleanup font awesome icons (fa:), links (click)
+                    makeDiagramUrl('svg');
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
 
         // TODO: either remove me later or enable
         // document.getElementById('download-diagram-svg-btn-v2').addEventListener('click', function onShowDiagramV2() {
@@ -160,28 +164,29 @@ import api from "./api.js";
         //     }
         // });
 
-        document.getElementById('render-diagram-btn').addEventListener('click', function onRenderDiagram(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        document.getElementById('render-diagram-btn')
+            .addEventListener('click', function onRenderDiagram(e) {
+                e.preventDefault();
+                e.stopPropagation();
 
-            const diagramContent = inEl.value.trim();
-            if (!diagramContent) {
-                notify('Click "Show diagram" button or edit manually "Input" before trying to render');
+                const diagramContent = inEl.value.trim();
+                if (!diagramContent) {
+                    notify('Click "Show diagram" button or edit manually "Input" before trying to render');
 
-                return;
-            }
+                    return;
+                }
 
-            try {
-                outCollapse.show();
-                mermaid.render('mermaid', diagramContent).then((v) => {
-                    outEl.innerHTML = v.svg;
-                    // console.log('[RENDER] ', outEl.innerHTML, diagramContent);
-                });
-            } catch (e) {
-                console.error('[ERROR] ', e);
-                notify('[ERROR] ' + e.message);
-            }
-        });
+                try {
+                    outCollapse.show();
+                    mermaid.render('mermaid', diagramContent).then((v) => {
+                        outEl.innerHTML = v.svg;
+                        // console.log('[RENDER] ', outEl.innerHTML, diagramContent);
+                    });
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    notify('[ERROR] ' + e.message);
+                }
+            });
 
         function saveInput() {
             let data = {
@@ -373,7 +378,7 @@ import api from "./api.js";
         }
 
         var sec_num = parseInt(seconds, 10);
-        var hours   = parseInt(Math.floor(sec_num / 3600), 10);
+        var hours = parseInt(Math.floor(sec_num / 3600), 10);
         var minutes = parseInt(Math.floor((sec_num - (hours * 3600)) / 60), 10);
         // var seconds = parseInt(sec_num - (hours * 3600) - (minutes * 60), 1);
 
@@ -455,7 +460,7 @@ import api from "./api.js";
                 break;
 
             default:
-                // nothing
+            // nothing
         }
 
         switch (_.get(item, 'fields.issuetype.name')) {
@@ -557,7 +562,7 @@ import api from "./api.js";
 
             out.push(makeNode(item));
             out.push(`    click ${item.key} href "${makeIssueHref(item)}" _blank`);
-                            out.push(''); // separator
+            out.push(''); // separator
 
             issueKeys.push(item.key);
         };
@@ -565,7 +570,7 @@ import api from "./api.js";
         let issueLinks = []
         let refKeys = [];
         let addRefIssue = function (type, from, to) {
-            if (hideTestsBtn.checked && ( _.get(from, 'fields.issuetype.name') === 'Test' || _.get(to, 'fields.issuetype.name') === 'Test')) {
+            if (hideTestsBtn.checked && (_.get(from, 'fields.issuetype.name') === 'Test' || _.get(to, 'fields.issuetype.name') === 'Test')) {
                 return; // skip test issue refs from display
             }
 
@@ -604,7 +609,7 @@ import api from "./api.js";
 
         // TODO: group by parent task instead of relations. 2. fix links arrows, e.g. blocks. 3. multi lines to split parent, issues and refs
 
-        issues.forEach((item)  => addIssueDesc(item));
+        issues.forEach((item) => addIssueDesc(item));
 
         issues.forEach(function (item) {
             if (
@@ -758,10 +763,10 @@ import api from "./api.js";
 
         if (!shortIssue) {
             title += '[ ' + _.get(issue, 'fields.issuetype.name') + ' | ' +
-                _.get(issue, 'fields.status.name') + ' | ' + issue.key  + ' ] ' + "\n";
+                _.get(issue, 'fields.status.name') + ' | ' + issue.key + ' ] ' + "\n";
         } else {
             title += '[' + _.get(issue, 'fields.issuetype.name') + '|' +
-                _.get(issue, 'fields.status.name') + '|' + issue.key  + '] '
+                _.get(issue, 'fields.status.name') + '|' + issue.key + '] '
         }
 
         return title + _.get(issue, 'fields.summary');
@@ -771,9 +776,9 @@ import api from "./api.js";
         return jiraUri + '/browse/' + issue.key;
     }
 
-    function textEncode (str) {
+    function textEncode(str) {
         if (window.TextEncoder) {
-             return new TextEncoder('utf-8').encode(str);
+            return new TextEncoder('utf-8').encode(str);
         }
 
         var utf8 = unescape(encodeURIComponent(str));
@@ -790,9 +795,9 @@ import api from "./api.js";
             code: source,
             mermaid: "{\"theme\": \"default\"}",
             autoSync: true,
-            updateDiagram:false,
-            panZoom:false,
-            editorMode:"code"
+            updateDiagram: false,
+            panZoom: false,
+            editorMode: "code"
         });
 
         const _hasBuffer = typeof Buffer == "function";
@@ -823,9 +828,9 @@ import api from "./api.js";
     }
 
     function makeKrokiUrl(source, type, diagramType = 'mermaid') {
-        const compressed = window.btoa(pako.deflate(textEncode(source), { level: 9, to: 'string' }))
-                .replace(/\+/g, '-')
-                .replace(/\//g, '_');
+        const compressed = window.btoa(pako.deflate(textEncode(source), {level: 9, to: 'string'}))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_');
 
         // Kroki usage - good for different diagrams
         var urlPath = diagramType + '/' + type + '/' + compressed;
