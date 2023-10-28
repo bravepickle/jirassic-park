@@ -67,11 +67,11 @@ import Viewer from "./viewer.js";
         /** @see https://mermaid.js.org/config/schema-docs/config-defs-flowchart-diagram-config.html */
         mermaid.initialize({
             startOnLoad: false,
-            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'linear'},
-            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'cardinal', rankSpacing: 50},
-            flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'cardinal', rankSpacing: 150},
-            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'basis', defaultRenderer: 'elk'},
-            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'linear'},
+            flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 50},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 150},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'basis', defaultRenderer: 'elk'},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
             securityLevel: 'loose',
             // theme: 'base',
             // theme: 'forest',
