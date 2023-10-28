@@ -22,9 +22,17 @@ export default class GraphClass {
             return url;
         }
 
-        notify('Failed to generate diagram URL. Check if diagram input is defined');
+        this.notify('Failed to generate diagram URL. Check if diagram input is defined');
 
         return null;
+    }
+
+    notify(message) {
+        this.dispatcher.publish({
+            channel: 'requests',
+            topic: 'notify',
+            data: message,
+        });
     }
 
     makeMermaidUrl(source, type) {

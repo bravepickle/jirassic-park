@@ -79,10 +79,6 @@ import Viewer from "./viewer.js";
             // theme: 'dark',
         });
 
-        // mermaid.flowchartConfig = {
-        //     width: 100%
-        // };
-
         document.getElementById('list-filters-btn')
             .addEventListener('click', function onListFiltersClick(e) {
                 e.stopPropagation();

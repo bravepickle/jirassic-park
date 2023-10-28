@@ -6,7 +6,7 @@ export default class StorageProcessor {
             user: null,
             token: null,
         },
-        dispatcher: postal,
+        dispatcher: null,
     }
     constructor(config) {
         this.initialize(config);
@@ -14,6 +14,14 @@ export default class StorageProcessor {
 
     initialize(config) {
         this.config = _.assign(this.config, config);
+    }
+
+    notify(message) {
+        this.config.dispatcher.publish({
+            channel: 'requests',
+            topic: 'notify',
+            data: message,
+        });
     }
 
     saveInput() {
@@ -45,7 +53,7 @@ export default class StorageProcessor {
 
         if (!input) {
             if (typeof silent === 'undefined' || !silent) {
-                notify('Storage is empty');
+                this.notify('Storage is empty');
             }
 
             return;
