@@ -68,13 +68,14 @@ import Viewer from "./viewer.js";
         mermaid.initialize({
             startOnLoad: false,
             // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'linear'},
-            flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 50},
+            // flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 100},
+            flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 50},
             // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 150},
             // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'basis', defaultRenderer: 'elk'},
             // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
             securityLevel: 'loose',
             // theme: 'base',
-            // theme: 'forest',
+            theme: 'forest',
             // theme: 'dark',
         });
 
