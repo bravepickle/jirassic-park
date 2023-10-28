@@ -1,4 +1,5 @@
 import api from "./api.js";
+import storageClass from "./storage.js";
 
 (function () {
     const elements = {};
@@ -47,6 +48,16 @@ import api from "./api.js";
             notify('[ERROR] ' + msg.join("\n"));
 
             return Promise.reject(e);
+        },
+        dispatcher: eventDispatcher,
+    });
+
+    const storage = new storageClass({
+        elements: elements,
+        defaults: {
+            uri: '{{ .uri }}',
+            user: '{{ .user }}',
+            token: '{{ .token }}',
         },
         dispatcher: eventDispatcher,
     });
@@ -109,9 +120,14 @@ import api from "./api.js";
                     .then((response) => showIssues(response));
             });
 
-        elements.inputSaveEl.addEventListener('click', () => saveInput());
-        elements.inputRestoreEl.addEventListener('click', () => restoreInput());
-        elements.inputClearEl.addEventListener('click', () => clearInput());
+        elements.inputSaveEl.addEventListener('click', () => storage.saveInput());
+        elements.inputRestoreEl.addEventListener('click', () => storage.restoreInput());
+        elements.inputClearEl.addEventListener('click', () => {
+            storage.clearInput();
+
+            elements.notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
+            bs.notifyModal.show();
+        });
 
         document.getElementById('show-diagram-btn').addEventListener('click', onShowDiagram);
         document.getElementById('main-form').addEventListener('submit', onShowDiagram);
@@ -196,131 +212,13 @@ import api from "./api.js";
                 }
             });
 
-        function saveInput() {
-            let data = {
-                uri: elements.uriBaseEl.value,
-                user: elements.userEl.value,
-                token: elements.tokenEl.value,
-                filter: elements.filterEl.value,
-                hideParents: elements.hideParentsEl.checked,
-                hideTests: elements.hideTestsEl.checked,
-                openImage: elements.openImgEl.checked,
-                shortIssue: elements.shortIssueEl.checked,
-                disableIcons: elements.disableIconsEl.checked,
-                extraParams: elements.extraParamsEl.value,
-                showMatched: elements.showMatchedEl.checked,
-            };
-
-            localStorage.setItem('input', JSON.stringify(data));
-
-            notify('Form input is stored!')
-        }
-
-        function restoreInput(silent) {
-            let input = localStorage.getItem('input');
-
-            if (!input) {
-                if (typeof silent === 'undefined' || !silent) {
-                    notify('Storage is empty');
-                }
-
-                return;
-            }
-
-            input = JSON.parse(input)
-
-            elements.uriBaseEl.value = input.uri
-            elements.userEl.value = input.user
-            elements.tokenEl.value = input.token
-            elements.filterEl.value = input.filter
-            elements.hideParentsEl.checked = !!input.hideParents;
-            elements.hideTestsEl.checked = !!input.hideTests;
-            elements.openImgEl.checked = !!input.openImage;
-            elements.shortIssueEl.checked = !!input.shortIssue;
-            elements.disableIconsEl.checked = !!input.disableIcons;
-            elements.extraParamsEl.value = !!input.extraParams ? input.extraParams : '';
-            elements.showMatchedEl.checked = !!input.showMatched;
-        }
-
-        function clearInput() {
-            localStorage.clear();
-
-            elements.uriBaseEl.value = '{{ .uri }}'
-            elements.userEl.value = '{{ .user }}'
-            elements.tokenEl.value = '{{ .token }}'
-            elements.filterEl.value = ''
-            elements.hideParentsEl.checked = false;
-            elements.hideTestsEl.checked = false;
-            elements.openImgEl.checked = false;
-            elements.shortIssueEl.checked = false;
-            elements.extraParamsEl.value = '';
-            elements.showMatchedEl.checked = false;
-
-            elements.notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
-            bs.notifyModal.show();
-        }
-
-        restoreInput(true);
+        storage.restoreInput(true);
     });
 
     function notify(message) {
         elements.notifyModalEl.querySelector('.modal-body').innerText = message
         bs.notifyModal.show();
     }
-
-    // function downloadDiagramAsPng() {
-    //     let svgEl = document.querySelector('svg');
-    //     if (!svgEl) {
-    //         notify('Click "Show diagram" button before trying to export');
-    //
-    //         return;
-    //     }
-    //
-    //     svgEl.crossOrigin = 'anonymous';
-    //     const svgString = (new XMLSerializer()).serializeToString(svgEl);
-    //     const svgBlob = new Blob([svgString], {
-    //         type: 'image/svg+xml;charset=utf-8'
-    //     });
-    //     svgBlob.crossOrigin = 'anonymous';
-    //
-    //     const DOMURL = window.URL || window.webkitURL || window;
-    //     const url = DOMURL.createObjectURL(svgBlob);
-    //
-    //     const image = new Image();
-    //     image.width = svgEl.width.baseVal.value;
-    //     image.height = svgEl.height.baseVal.value;
-    //
-    //     image.onload = function () {
-    //         const canvas = document.createElement('CANVAS');
-    //         // const canvas = document.querySelector('canvas');
-    //
-    //         canvas.width = image.width;
-    //         canvas.height = image.height;
-    //
-    //         try {
-    //             const ctx = canvas.getContext('2d');
-    //             ctx.drawImage(image, 0, 0);
-    //             DOMURL.revokeObjectURL(url);
-    //
-    //             const imgURI = canvas
-    //                 .toDataURL('image/svg')
-    //                 .replace('image/svg', 'image/octet-stream');
-    //
-    //             triggerDownload(imgURI, 'issues_diagram.png');
-    //         } catch (e) {
-    //             console.error('[ERROR] ', e, image);
-    //             notify('[ERROR] ' + e.message + "\n\nTry downloading by righ clicking the image");
-    //
-    //             elements.outEl.innerHTML = '';
-    //             elements.outEl.appendChild(canvas); // stupid dirty hack...
-    //         }
-    //
-    //     };
-    //
-    //     image.crossOrigin = 'anonymous';
-    //     image.referrerPolicy = 'no-referrer';
-    //     image.src = url;
-    // }
 
     let triggerDownload = (imgURI, fileName) => {
         let a = document.createElement('a')
@@ -333,23 +231,6 @@ import api from "./api.js";
 
         a.click()
     }
-
-    // function downloadDiagramAsSvg() {
-    //     // var btn = document.querySelector('button')
-    //     var svg = document.querySelector('svg')
-    //
-    //     if (!svg) {
-    //         notify('Click "Show diagram" button before trying to export');
-    //
-    //         return;
-    //     }
-    //
-    //     let data = (new XMLSerializer()).serializeToString(svg)
-    //     let svgBlob = new Blob([data], {type: 'image/svg+xml;charset=utf-8'})
-    //     let url = URL.createObjectURL(svgBlob)
-    //
-    //     triggerDownload(url, 'issues_diagram.svg')
-    // }
 
     function showDiagram(data) {
         elements.outEl.innerHTML = '';
@@ -385,12 +266,12 @@ import api from "./api.js";
             return '';
         }
 
-        var sec_num = parseInt(seconds, 10);
-        var hours = parseInt(Math.floor(sec_num / 3600), 10);
-        var minutes = parseInt(Math.floor((sec_num - (hours * 3600)) / 60), 10);
+        const sec_num = parseInt(seconds, 10);
+        const hours = parseInt(Math.floor(sec_num / 3600), 10);
+        const minutes = parseInt(Math.floor((sec_num - (hours * 3600)) / 60), 10);
         // var seconds = parseInt(sec_num - (hours * 3600) - (minutes * 60), 1);
 
-        var parts = [];
+        const parts = [];
         if (hours > 0) {
             parts.push(hours + 'h');
         }
@@ -400,12 +281,6 @@ import api from "./api.js";
         }
 
         return parts.join(' ');
-
-        // if (hours   < 10) {hours   = "0"+hours;}
-        // if (minutes < 10) {minutes = "0"+minutes;}
-        // if (seconds < 10) {seconds = "0"+seconds;}
-
-        // return hours + ':' + minutes + ':' + seconds;
     }
 
     function makeEstimate(item) {
@@ -431,7 +306,7 @@ import api from "./api.js";
     }
 
     function makeTimeSpent(item) {
-        let timespent = _.get(item, 'fields.aggregatetimespent')
+        const timespent = _.get(item, 'fields.aggregatetimespent')
 
         if (!timespent) {
             timespent = _.get(item, 'fields.timespent')
