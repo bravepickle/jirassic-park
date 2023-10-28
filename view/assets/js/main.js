@@ -64,9 +64,14 @@ import Viewer from "./viewer.js";
     const view = new Viewer(elements, utils, bs, graph, eventDispatcher);
 
     document.addEventListener('DOMContentLoaded', function () {
+        /** @see https://mermaid.js.org/config/schema-docs/config-defs-flowchart-diagram-config.html */
         mermaid.initialize({
             startOnLoad: false,
-            flowchart: {useMaxWidth: true, htmlLabels: false},
+            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'linear'},
+            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'cardinal', rankSpacing: 50},
+            flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'cardinal', rankSpacing: 150},
+            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'basis', defaultRenderer: 'elk'},
+            // flowchart: {useMaxWidth: true, htmlLabels: false, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
             securityLevel: 'loose',
             // theme: 'base',
             // theme: 'forest',
