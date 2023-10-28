@@ -66,10 +66,11 @@ import Viewer from "./viewer.js";
     document.addEventListener('DOMContentLoaded', function () {
         mermaid.initialize({
             startOnLoad: false,
-            flowchart: {useMaxWidth: true, htmlLabels: true},
+            flowchart: {useMaxWidth: true, htmlLabels: false},
             securityLevel: 'loose',
             // theme: 'base',
             // theme: 'forest',
+            // theme: 'dark',
         });
 
         // mermaid.flowchartConfig = {
@@ -179,6 +180,9 @@ import Viewer from "./viewer.js";
                     mermaid.render('mermaid', diagramContent).then((v) => {
                         elements.outEl.innerHTML = v.svg;
                         // console.log('[RENDER] ', elements.outEl.innerHTML, diagramContent);
+                    }).catch((e) => {
+                        console.error('[ERROR] ', e);
+                        notify('[ERROR] ' + e.message);
                     });
                 } catch (e) {
                     console.error('[ERROR] ', e);
