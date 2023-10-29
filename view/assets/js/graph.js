@@ -39,6 +39,14 @@ export default class GraphClass {
         let data = JSON.stringify({
             code: source,
             mermaid: "{\"theme\": \"default\"}",
+            // TODO: send current config changes to export
+            // mermaid: JSON.stringify({
+            //     startOnLoad: false,
+            //     flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'linear', defaultRenderer: 'elk'},
+            //     securityLevel: 'loose',
+            //     theme: 'forest',
+            // }),
+            // mermaid: JSON.stringify(mermaid.mermaidAPI.getConfig()),
             autoSync: true,
             updateDiagram: false,
             panZoom: false,

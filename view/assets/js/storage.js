@@ -5,6 +5,8 @@ export default class StorageProcessor {
             uri: null,
             user: null,
             token: null,
+            mermaidCfg: null,
+            input: null,
         },
         dispatcher: null,
     }
@@ -37,7 +39,19 @@ export default class StorageProcessor {
             disableIcons: _.get(this.config, 'elements.disableIconsEl.checked'),
             extraParams: _.get(this.config, 'elements.extraParamsEl.value'),
             showMatched: _.get(this.config, 'elements.showMatchedEl.checked'),
+            mermaidCfg: _.get(this.config, 'elements.cfgEl.value', '').trim(),
+            input: _.get(this.config, 'elements.inEl.value', '').trim(),
         };
+
+        if (data.mermaidCfg) {
+            try {
+                data.mermaidCfg = JSON.parse(data.mermaidCfg);
+            } catch (e) {
+                this.notify(`Invalid diagram configuration JSON format.\n${e.message}`);
+
+                return;
+            }
+        }
 
         localStorage.setItem('input', JSON.stringify(data));
 
@@ -72,6 +86,12 @@ export default class StorageProcessor {
         this.config.elements.disableIconsEl.checked = !!input.disableIcons;
         this.config.elements.extraParamsEl.value = !!input.extraParams ? input.extraParams : '';
         this.config.elements.showMatchedEl.checked = !!input.showMatched;
+        this.config.elements.cfgEl.value = JSON.stringify(
+            !!input.mermaidCfg ? input.mermaidCfg : this.config.defaults.mermaidCfg,
+            null,
+            4
+        );
+        this.config.elements.inEl.value = !!input.input ? input.input : this.config.defaults.input;
     }
 
     clearInput() {
@@ -87,8 +107,7 @@ export default class StorageProcessor {
         this.config.elements.shortIssueEl.checked = false;
         this.config.elements.extraParamsEl.value = '';
         this.config.elements.showMatchedEl.checked = false;
-
-        // elements.notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
-        // notifyModal.show();
+        this.config.elements.cfgEl.checked = this.config.defaults.mermaidCfg;
+        this.config.elements.inEl.value = this.config.defaults.input;
     }
 }

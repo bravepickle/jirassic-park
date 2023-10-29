@@ -29,19 +29,7 @@ export default class Viewer {
         });
 
         /** @see https://mermaid.js.org/config/schema-docs/config-defs-flowchart-diagram-config.html */
-        mermaid.initialize({
-            startOnLoad: false,
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'linear'},
-            // flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 100},
-            flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 50},
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 150},
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'basis', defaultRenderer: 'elk'},
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
-            securityLevel: 'loose',
-            // theme: 'base',
-            theme: 'forest',
-            // theme: 'dark',
-        });
+        mermaid.initialize({startOnLoad: false});
 
         const onShowDiagram = (e) => {
             e.stopPropagation();
@@ -142,13 +130,15 @@ export default class Viewer {
                 try {
                     bs.outCollapse.show();
                     // TODO: move to graph.js module. Together with mermaid calls
-                    mermaid.render('mermaid', diagramContent).then((v) => {
-                        elements.outEl.innerHTML = v.svg;
-                        // console.log('[RENDER] ', elements.outEl.innerHTML, diagramContent);
-                    }).catch((e) => {
-                        console.error('[ERROR] ', e);
-                        this.notify('[ERROR] ' + e.message);
-                    });
+                    try {
+                        mermaid.mermaidAPI.setConfig(JSON.parse(elements.cfgEl.value.trim()));
+                    } catch (e) {
+                        this.notify(`Invalid diagram configuration JSON format.\n${e.message}`);
+
+                        return;
+                    }
+
+                    this.renderDiagram(diagramContent);
                 } catch (e) {
                     console.error('[ERROR] ', e);
                     this.notify('[ERROR] ' + e.message);
@@ -276,7 +266,6 @@ export default class Viewer {
     showDiagram(data) {
         const elements = this.config.elements;
         const bs = this.config.bs;
-        const mermaid = this.config.mermaid;
 
         elements.outEl.innerHTML = '';
 
@@ -297,13 +286,37 @@ export default class Viewer {
         elements.outEl.appendChild(el.firstElementChild);
         bs.outCollapse.show();
 
-        this.config.graph.makeDiagram(data.issues).then(function (diagram) {
-            mermaid.render('mermaid', diagram).then((v) => {
-                elements.inEl.value = diagram
+        this.config.graph.makeDiagram(data.issues).then((diagram) => {
+            const promise = this.renderDiagram(diagram);
+
+            if (promise) {
+                promise.then(() => {elements.inEl.value = diagram});
+            }
+        });
+    }
+
+    renderDiagram(diagram) {
+        const elements = this.config.elements;
+        const mermaid = this.config.mermaid;
+
+        try {
+            mermaid.mermaidAPI.setConfig(JSON.parse(elements.cfgEl.value.trim()));
+        } catch (e) {
+            this.notify(`Invalid diagram configuration JSON format.\n${e.message}`);
+
+            return null;
+        }
+
+        return mermaid.render('mermaid', diagram)
+            .then((v) => {
                 elements.outEl.innerHTML = v.svg;
                 // console.log('[RENDER]', elements.outEl.innerHTML);
+
+                return v;
+            }).catch((e) => {
+                console.error('[ERROR] ', e);
+                this.notify('[ERROR] ' + e.message);
             });
-        });
     }
 
     notify(msg) {

@@ -12,13 +12,32 @@
         body #mermaid .node path {
             fill: #fff;
         }
+
+        #config, #input, #filter, #issue-extra-fields {
+            overflow-x: auto;
+            max-width: 1400px;
+            white-space: pre;
+            font-size: 0.8em;
+        }
+
+        #input {
+            min-height: 300px;
+        }
+
+        #filter, #config, #issue-extra-fields {
+            height: 10em;
+        }
+
+        #output {
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
 <div class="container-fluid" style="min-width: 3000px">
     <h1>JIRA Tasks Overview</h1>
 
-    <div class="card">
+    <div class="card mb-3">
         <div class="card-body">
             <h3 class="card-title">Settings</h3>
             <form action="/action" name="main-form" id="main-form" method="POST" style="max-width: 1400px;">
@@ -47,7 +66,7 @@
 
                 <div class="mb-3">
                     <label class="form-label" for="filter">Filter JQL:</label>
-                    <textarea class="form-control font-monospace" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter" style="height: 10rem;"></textarea>
+                    <textarea class="form-control font-monospace" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter"></textarea>
                     <div class="form-text">
                         Filter JQL to use for issues display
                     </div>
@@ -55,17 +74,52 @@
 
                 <div class="mb-3">
                     <label for="issue-extra-fields" class="form-label">Extra issue fields:</label>
-                    <textarea class="form-control font-monospace" placeholder="Specify extra fields here..." spellcheck="false" id="issue-extra-fields" name="issue-extra-fields" style="height: 10rem;"></textarea>
-                    <div class="form-text">
-                        Using dot notation specify extra fields you want to have in diagram and issues list, separated by new line. Label can be added after colon.
-                        Read <a rel="nofollow" class="link-info" href="https://developer.atlassian.com/server/jira/platform/rest-apis/" target="_blank">API docs</a> or look in to dev toolbar response output for params info
-                        <p>
-                            <strong>Example:</strong>
-                            <pre class="bg-light p-2"><code>id
+                    <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#issue-extra-fields-wrap" role="button">
+                        <i class="fa fa-eye"></i> Toggle view
+                    </a>
+                    <div id="issue-extra-fields-wrap" class="collapse">
+                        <textarea class="form-control font-monospace" placeholder="Specify extra fields here..." spellcheck="false" id="issue-extra-fields" name="issue-extra-fields" style="height: 10rem;"></textarea>
+                        <div class="form-text">
+                            Using dot notation specify extra fields you want to have in diagram and issues list, separated by new line. Label can be added after colon.
+                            Read <a rel="nofollow" class="link-info" href="https://developer.atlassian.com/server/jira/platform/rest-apis/" target="_blank">API docs</a> or look in to dev toolbar response output for params info
+                            <p>
+                                <strong>Example:</strong>
+                                <pre class="bg-light p-2"><code>id
 key
 fields.created:Issue created
 fields.priority.name: Priority</code></pre>
-                        </p>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="config">Diagram settings:</label>
+                    <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#config-wrap" role="button">
+                        <i class="fa fa-eye"></i> Toggle view
+                    </a>
+                    <div id="config-wrap" class="collapse">
+                        <textarea id="config" class="form-control bg-light font-monospace"></textarea>
+                        <div class="form-text">
+                            Diagram configuration in JSON format. Settings' description can be found
+                            <a target="_blank" class="link-info" href="https://mermaid.js.org/config/schema-docs/config.html">here</a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="input">Input diagram:</label>
+                    <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#input-wrap" role="button">
+                        <i class="fa fa-eye"></i> Toggle view
+                    </a>
+                    <div id="input-wrap" class="collapse">
+                        <textarea id="input" class="form-control bg-light font-monospace"></textarea>
+                        <div class="form-text">
+                            Diagram input data in Mermaid flowchart format. More information on usage can be found
+                            <a target="_blank" class="link-info" href="https://mermaid.js.org/syntax/flowchart.html">
+                                here
+                            </a>. Is used only when the button "Render from input" is clicked.
+                        </div>
                     </div>
                 </div>
 
@@ -144,29 +198,15 @@ fields.priority.name: Priority</code></pre>
         </div>
       </div>
 
-
-    <div class="pt-5 pb-3">
-        <a class="btn btn-info" data-bs-toggle="collapse" href="#input" role="button">Toggle diagram input</a>
+    <div class="mb-3">
+        <label for="output" class="mb-3 h3">Output</label>
+        <div class="mb-3">
+            <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" href="#output" role="button">
+                <i class="fa fa-eye"></i> Toggle output
+            </a>
+        </div>
+        <div id="output" class="mb-3 collapse"></div>
     </div>
-
-    <div>
-        <label for="input" class="h3">Input</label>
-        <textarea id="input" class="form-control collapse bg-light" style="overflow-x: auto; min-height: 300px; max-width: 1400px; white-space: pre;">
-graph LR
-    A --- B
-    B-->C[fa:fa-ban forbidden]
-    B-. uses .->D
-
-    style C fill:#ab0
-        </textarea>
-    </div>
-
-    <div class="pt-5 pb-3">
-        <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle output</a>
-    </div>
-
-    <label for="output" class="mb-3 h3">Output</label>
-    <div id="output" class="mt-5 mb-5 collapse" style="overflow-x: auto; "></div>
 
     <!-- Modal -->
     <div class="modal fade" id="notifyModal" tabindex="-1" aria-hidden="true">

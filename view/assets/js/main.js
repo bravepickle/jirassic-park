@@ -33,6 +33,8 @@ import Viewer from "./viewer.js";
     elements.outEl = document.getElementById('output');
     bs.outCollapse = new bootstrap.Collapse(elements.outEl, {toggle: false});
 
+    elements.cfgEl = document.getElementById('config');
+
     const dispatcher = postal;
 
     const apiInstance = api({
@@ -55,6 +57,25 @@ import Viewer from "./viewer.js";
             uri: window.appConfig.uri,
             user: window.appConfig.user,
             token: window.appConfig.token,
+            mermaidCfg: {
+                startOnLoad: false,
+                flowchart: {
+                    useMaxWidth: true,
+                    htmlLabels: true,
+                    curve: 'cardinal',
+                    rankSpacing: 100,
+                    wrappingWidth: 400,
+                    nodeSpacing: 50,
+                },
+                securityLevel: 'loose',
+                theme: 'forest',
+            },
+            input: `graph LR
+    A --- B
+    B-->C[fa:fa-ban forbidden]
+    B-. uses .->D
+
+    style C fill:#ab0`
         },
         dispatcher: dispatcher,
     });
