@@ -36,4 +36,4 @@ VOLUME /app
 EXPOSE 80
 EXPOSE 443
 
-CMD [ "/app/jirassic-park", "--env .env", "--debug"]
+CMD [ "jirassic-park", "--env .env", "--debug"]
