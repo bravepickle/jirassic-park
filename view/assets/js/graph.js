@@ -147,10 +147,6 @@ export default class GraphClass {
                 !elements.hideParentsEl.checked &&
                 (!elements.showMatchedEl.checked || issueKeys.includes(item.fields.parent.key))
             ) {
-                // if (!elements.hideTestsEl.checked || _.get(item.fields.parent, 'fields.issuetype.name') !== 'Test') {
-                //     addIssueDesc(item.fields.parent);
-                // }
-
                 if (
                     !elements.hideParentsEl.checked &&
                     !issueLinks.includes(item.fields.parent.key) &&
@@ -186,10 +182,6 @@ export default class GraphClass {
                     if (_.get(item, 'fields.parent.id') === issue.id) {
                         return; // if references parent issue then skip
                     }
-
-                    // if (!elements.hideTestsEl.checked || _.get(issue, 'fields.issuetype.name') !== 'Test') {
-                    //     addIssueDesc(issue);
-                    // }
 
                     addRefIssue({name: ref.type.name, dir: refType}, item, issue);
                 });
@@ -285,7 +277,6 @@ export default class GraphClass {
         }
 
         let out = []
-
         if (!elements.shortIssueEl.checked) {
             out.push(`    ${item.key}${left}"\`${title}`);
 

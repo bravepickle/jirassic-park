@@ -1,27 +1,164 @@
 export default class Viewer {
-    elements;
-    utils;
-    bs;
-    dispatcher;
-    graph;
+    config = {
+        elements: null,
+        bs: null,
+        dispatcher: null,
+        graph: null,
+        mermaid: null,
+        apiInstance: null,
+        storage: null,
+    };
 
-    constructor(elements, utils, bs, graph, dispatcher) {
-        this.elements = elements;
-        this.utils = utils;
-        this.bs = bs;
-        this.graph = graph;
-        this.dispatcher = dispatcher;
+    constructor(config) {
+        this.config = config;
+    }
 
-        this.dispatcher.subscribe({
+    initEvents() {
+        const elements = this.config.elements;
+        const mermaid = this.config.mermaid;
+        const bs = this.config.bs;
+        const graph = this.config.graph;
+        const apiInstance = this.config.apiInstance;
+        const storage = this.config.storage;
+        const dispatcher = this.config.dispatcher;
+
+        dispatcher.subscribe({
             channel: 'requests',
             topic: 'notify',
             callback: (msg) => this.notify(msg),
         });
+
+        /** @see https://mermaid.js.org/config/schema-docs/config-defs-flowchart-diagram-config.html */
+        mermaid.initialize({
+            startOnLoad: false,
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'linear'},
+            // flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 100},
+            flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 50},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 150},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'basis', defaultRenderer: 'elk'},
+            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
+            securityLevel: 'loose',
+            // theme: 'base',
+            theme: 'forest',
+            // theme: 'dark',
+        });
+
+        const onShowDiagram = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+
+            let jqlQuery = _.trim(elements.filterEl.value)
+
+            if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
+                this.notify('[ERROR] Input values are not defined')
+
+                return;
+            }
+
+            apiInstance.searchIssues(jqlQuery).then((response) => this.showDiagram(response));
+        }
+
+        document.getElementById('list-filters-btn')
+            .addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                if (!elements.userEl.value || !elements.tokenEl.value || !elements.uriBaseEl.value) {
+                    this.notify('[ERROR] Input values are not defined')
+
+                    return;
+                }
+
+                bs.inCollapse.hide();
+                apiInstance.listFilters().then((response) => this.showFilters(response));
+            });
+
+        document.getElementById('show-tasks-btn')
+            .addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                let jqlQuery = _.trim(elements.filterEl.value)
+                if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
+                    this.notify('[ERROR] Input values are not defined')
+
+                    return;
+                }
+
+                bs.inCollapse.hide();
+                apiInstance.searchIssues(jqlQuery).then((response) => this.showIssues(response));
+            });
+
+        elements.inputSaveEl.addEventListener('click', () => storage.saveInput());
+        elements.inputRestoreEl.addEventListener('click', () => storage.restoreInput());
+        elements.inputClearEl.addEventListener('click', () => {
+            storage.clearInput();
+
+            elements.notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
+            bs.notifyModal.show();
+        });
+
+        document.getElementById('show-diagram-btn').addEventListener('click', onShowDiagram);
+        document.getElementById('main-form').addEventListener('submit', onShowDiagram);
+
+        document.getElementById('download-diagram-png-btn')
+            .addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                try {
+                    graph.makeDiagramUrl('png');
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    this.notify('[ERROR] ' + e.message);
+                }
+            });
+
+        document.getElementById('download-diagram-svg-btn')
+            .addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                try {
+                    graph.makeDiagramUrl('svg');
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    this.notify('[ERROR] ' + e.message);
+                }
+            });
+
+        document.getElementById('render-diagram-btn')
+            .addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const diagramContent = elements.inEl.value.trim();
+                if (!diagramContent) {
+                    this.notify('Click "Show diagram" button or edit manually "Input" before trying to render');
+
+                    return;
+                }
+
+                try {
+                    bs.outCollapse.show();
+                    // TODO: move to graph.js module. Together with mermaid calls
+                    mermaid.render('mermaid', diagramContent).then((v) => {
+                        elements.outEl.innerHTML = v.svg;
+                        // console.log('[RENDER] ', elements.outEl.innerHTML, diagramContent);
+                    }).catch((e) => {
+                        console.error('[ERROR] ', e);
+                        this.notify('[ERROR] ' + e.message);
+                    });
+                } catch (e) {
+                    console.error('[ERROR] ', e);
+                    this.notify('[ERROR] ' + e.message);
+                }
+            });
     }
 
     showIssues(data) {
-        const elements = this.elements;
-        const utils = this.utils;
+        const elements = this.config.elements;
+        const utils = this.config.utils;
 
         let tplEl = document.getElementById('issue-tpl')
         let issueTplEl = document.getElementById('issue-link-tpl')
@@ -105,12 +242,12 @@ export default class Viewer {
             elements.outEl.appendChild(el.firstElementChild)
         });
 
-        this.bs.outCollapse.show();
+        this.config.bs.outCollapse.show();
     }
 
     showFilters(data) {
-        const elements = this.elements;
-        const bs = this.bs;
+        const elements = this.config.elements;
+        const bs = this.config.bs;
 
         elements.outEl.innerHTML = '';
         if (!data) {
@@ -137,8 +274,9 @@ export default class Viewer {
     }
 
     showDiagram(data) {
-        const elements = this.elements;
-        const bs = this.bs;
+        const elements = this.config.elements;
+        const bs = this.config.bs;
+        const mermaid = this.config.mermaid;
 
         elements.outEl.innerHTML = '';
 
@@ -159,7 +297,7 @@ export default class Viewer {
         elements.outEl.appendChild(el.firstElementChild);
         bs.outCollapse.show();
 
-        this.graph.makeDiagram(data.issues).then(function (diagram) {
+        this.config.graph.makeDiagram(data.issues).then(function (diagram) {
             mermaid.render('mermaid', diagram).then((v) => {
                 elements.inEl.value = diagram
                 elements.outEl.innerHTML = v.svg;
@@ -169,7 +307,7 @@ export default class Viewer {
     }
 
     notify(msg) {
-        this.elements.notifyModalEl.querySelector('.modal-body').innerText = msg;
-        this.bs.notifyModal.show();
+        this.config.elements.notifyModalEl.querySelector('.modal-body').innerText = msg;
+        this.config.bs.notifyModal.show();
     }
 }

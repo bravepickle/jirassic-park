@@ -33,7 +33,7 @@ import Viewer from "./viewer.js";
     elements.outEl = document.getElementById('output');
     bs.outCollapse = new bootstrap.Collapse(elements.outEl, {toggle: false});
 
-    const eventDispatcher = postal;
+    const dispatcher = postal;
 
     const apiInstance = api({
         uriBaseCallback: () => _.trimEnd(elements.uriBaseEl.value, '/'),
@@ -46,157 +46,40 @@ import Viewer from "./viewer.js";
 
             return Promise.reject(e);
         },
-        dispatcher: eventDispatcher,
+        dispatcher: dispatcher,
     });
 
     const storage = new StorageProcessor({
         elements: elements,
         defaults: {
-            uri: '{{ .uri }}',
-            user: '{{ .user }}',
-            token: '{{ .token }}',
+            uri: window.appConfig.uri,
+            user: window.appConfig.user,
+            token: window.appConfig.token,
         },
-        dispatcher: eventDispatcher,
+        dispatcher: dispatcher,
     });
 
-    const utils = new UtilsClass(elements, {jiraUri: jiraUri});
-    const graph = new GraphClass(eventDispatcher, utils, elements, apiInstance);
-    const view = new Viewer(elements, utils, bs, graph, eventDispatcher);
+    const utils = new UtilsClass(elements, {jiraUri: window.appConfig.jiraUri});
+    const graph = new GraphClass(dispatcher, utils, elements, apiInstance);
+
+    const view = new Viewer({
+        elements,
+        bs,
+        dispatcher,
+        graph,
+        mermaid,
+        apiInstance,
+        storage,
+        utils,
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
-        /** @see https://mermaid.js.org/config/schema-docs/config-defs-flowchart-diagram-config.html */
-        mermaid.initialize({
-            startOnLoad: false,
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'linear'},
-            // flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 100},
-            flowchart: {useMaxWidth: true, htmlLabels: !elements.disableIconsEl.checked, curve: 'cardinal', rankSpacing: 100, wrappingWidth: 400, nodeSpacing: 50},
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', rankSpacing: 150},
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'basis', defaultRenderer: 'elk'},
-            // flowchart: {useMaxWidth: true, htmlLabels: true, curve: 'cardinal', defaultRenderer: 'dagre-d3'},
-            securityLevel: 'loose',
-            // theme: 'base',
-            theme: 'forest',
-            // theme: 'dark',
-        });
-
-        document.getElementById('list-filters-btn')
-            .addEventListener('click', function onListFiltersClick(e) {
-                e.stopPropagation();
-                e.preventDefault();
-
-                if (!elements.userEl.value || !elements.tokenEl.value || !elements.uriBaseEl.value) {
-                    notify('[ERROR] Input values are not defined')
-
-                    return;
-                }
-
-                bs.inCollapse.hide();
-                apiInstance.listFilters().then((response) => view.showFilters(response));
-            });
-
-        document.getElementById('show-tasks-btn')
-            .addEventListener('click', function onShowTasks(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                let jqlQuery = _.trim(elements.filterEl.value)
-                if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
-                    notify('[ERROR] Input values are not defined')
-
-                    return;
-                }
-
-                bs.inCollapse.hide();
-                apiInstance.searchIssues(jqlQuery).then((response) => view.showIssues(response));
-            });
-
-        elements.inputSaveEl.addEventListener('click', () => storage.saveInput());
-        elements.inputRestoreEl.addEventListener('click', () => storage.restoreInput());
-        elements.inputClearEl.addEventListener('click', () => {
-            storage.clearInput();
-
-            elements.notifyModalEl.querySelector('.modal-body').innerText = 'Form input storage is cleared!'
-            bs.notifyModal.show();
-        });
-
-        document.getElementById('show-diagram-btn').addEventListener('click', onShowDiagram);
-        document.getElementById('main-form').addEventListener('submit', onShowDiagram);
-
-        function onShowDiagram(e) {
-            e.stopPropagation();
-            e.preventDefault();
-
-            let jqlQuery = _.trim(elements.filterEl.value)
-
-            if (!elements.userEl.value || !elements.tokenEl.value || !jqlQuery) {
-                notify('[ERROR] Input values are not defined')
-
-                return;
-            }
-
-            apiInstance.searchIssues(jqlQuery).then((response) => view.showDiagram(response));
-        }
-
-        document.getElementById('download-diagram-png-btn')
-            .addEventListener('click', function onShowDiagramPng(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                try {
-                    graph.makeDiagramUrl('png');
-                } catch (e) {
-                    console.error('[ERROR] ', e);
-                    notify('[ERROR] ' + e.message);
-                }
-            });
-
-        document.getElementById('download-diagram-svg-btn')
-            .addEventListener('click', function onShowDiagramSvg(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                try {
-                    // TODO: cleanup font awesome icons (fa:), links (click)
-                    graph.makeDiagramUrl('svg');
-                } catch (e) {
-                    console.error('[ERROR] ', e);
-                    notify('[ERROR] ' + e.message);
-                }
-            });
-
-        document.getElementById('render-diagram-btn')
-            .addEventListener('click', function onRenderDiagram(e) {
-                e.preventDefault();
-                e.stopPropagation();
-
-                const diagramContent = elements.inEl.value.trim();
-                if (!diagramContent) {
-                    notify('Click "Show diagram" button or edit manually "Input" before trying to render');
-
-                    return;
-                }
-
-                try {
-                    bs.outCollapse.show();
-                    // TODO: move to graph.js module. Together with mermaid calls
-                    mermaid.render('mermaid', diagramContent).then((v) => {
-                        elements.outEl.innerHTML = v.svg;
-                        // console.log('[RENDER] ', elements.outEl.innerHTML, diagramContent);
-                    }).catch((e) => {
-                        console.error('[ERROR] ', e);
-                        notify('[ERROR] ' + e.message);
-                    });
-                } catch (e) {
-                    console.error('[ERROR] ', e);
-                    notify('[ERROR] ' + e.message);
-                }
-            });
-
+        view.initEvents();
         storage.restoreInput(true);
     });
 
     function notify(message) {
-        eventDispatcher.publish({
+        dispatcher.publish({
             channel: 'requests',
             topic: 'notify',
             data: message,

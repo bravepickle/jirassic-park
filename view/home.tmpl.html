@@ -23,7 +23,7 @@
             <h3 class="card-title">Settings</h3>
             <form action="/action" name="main-form" id="main-form" method="POST" style="max-width: 1400px;">
                 <div class="mb-3">
-                    <label class="form-label">Base API URI:</label>
+                    <label class="form-label" for="uri">Base API URI:</label>
                     <input class="form-control" type="text" id="uri" name="uri" autocomplete="no" value="{{ .uri }}"/>
 
                     <div id="uriHelpBlock" class="form-text">
@@ -46,9 +46,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="token" class="form-label">Filter JQL:</label>
+                    <label class="form-label" for="filter">Filter JQL:</label>
                     <textarea class="form-control font-monospace" placeholder="Leave a JQL here" spellcheck="false" id="filter" name="filter" style="height: 10rem;"></textarea>
-                    <div id="filteIdInfo" class="form-text">
+                    <div class="form-text">
                         Filter JQL to use for issues display
                     </div>
                 </div>
@@ -56,7 +56,7 @@
                 <div class="mb-3">
                     <label for="issue-extra-fields" class="form-label">Extra issue fields:</label>
                     <textarea class="form-control font-monospace" placeholder="Specify extra fields here..." spellcheck="false" id="issue-extra-fields" name="issue-extra-fields" style="height: 10rem;"></textarea>
-                    <div id="filteIdInfo" class="form-text">
+                    <div class="form-text">
                         Using dot notation specify extra fields you want to have in diagram and issues list, separated by new line. Label can be added after colon.
                         Read <a rel="nofollow" class="link-info" href="https://developer.atlassian.com/server/jira/platform/rest-apis/" target="_blank">API docs</a> or look in to dev toolbar response output for params info
                         <p>
@@ -150,8 +150,8 @@ fields.priority.name: Priority</code></pre>
     </div>
 
     <div>
-        <h3>Input</h3>
-        <textarea id="input" class="form-control collapse bg-light" style="overflow-x: auto; min-height: 300px; max-width: 1400px; white-space: pre; font-monospace">
+        <label for="input" class="h3">Input</label>
+        <textarea id="input" class="form-control collapse bg-light" style="overflow-x: auto; min-height: 300px; max-width: 1400px; white-space: pre;">
 graph LR
     A --- B
     B-->C[fa:fa-ban forbidden]
@@ -165,7 +165,7 @@ graph LR
         <a class="btn btn-info" data-bs-toggle="collapse" href="#output" role="button">Toggle output</a>
     </div>
 
-    <h3 class="mb-3">Output</h3>
+    <label for="output" class="mb-3 h3">Output</label>
     <div id="output" class="mt-5 mb-5 collapse" style="overflow-x: auto; "></div>
 
     <!-- Modal -->
@@ -240,7 +240,12 @@ graph LR
 
 <script src="/assets/js/main.js" type="module"></script>
 <script>
-    window.jiraUri = '{{ .jira_uri }}';
+    window.appConfig = {
+        uri: '{{ .uri }}',
+        user: '{{ .user }}',
+        token: '{{ .token }}',
+        jiraUri: '{{ .jira_uri }}',
+    };
 </script>
 </body>
 </html>
