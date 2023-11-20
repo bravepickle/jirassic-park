@@ -87,8 +87,15 @@ export default class GraphClass {
             '---',
             'title: Issues Flowchart at ' + (new Date()).toLocaleString(),
             '---',
-            'flowchart LR'
         ];
+
+        // change graph direction based on short or long task description requested - for optimized views
+        if (elements.shortIssueEl.checked) {
+            out.push('flowchart LR');
+        } else {
+            out.push('flowchart TB');
+        }
+
         let issueKeys = [];
 
         let addIssueDesc = (issue) => {
@@ -262,8 +269,15 @@ export default class GraphClass {
                 break;
 
             case 'Sub-task':
-                left = '([';
-                right = '])';
+                // change element visuals depending if it is short description or long. Big description should not be visible as circle
+                if (elements.shortIssueEl.checked) {
+                    left = '([';
+                    right = '])';
+                } else {
+                    left = '[';
+                    right = ']';
+                }
+
                 styles.push('fill:#66ccff')
                 break;
 
