@@ -126,7 +126,8 @@ export default class GraphClass {
 
             switch (type.name) {
                 case 'Parent':
-                    out.push(`    ${from.key} -. parent .-> ${to.key}`);
+                    // out.push(`    ${from.key} -. parent .-> ${to.key}`);
+                    out.push(`    ${from.key} == parent ==> ${to.key}`);
                     break;
                 case 'Blocks':
                     if (type.dir === 'blocks') {
@@ -143,7 +144,8 @@ export default class GraphClass {
                     }
                     break;
                 case 'Relates':
-                    out.push(`    ${from.key} -- relates --- ${to.key}`);
+                    // out.push(`    ${from.key} -- relates --- ${to.key}`);
+                    out.push(`    ${from.key} -. relates .- ${to.key}`);
                     break;
                 default:
                     out.push(`    ${from.key} o-- ${type.dir} --o ${to.key}`);

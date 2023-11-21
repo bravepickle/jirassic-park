@@ -12,6 +12,7 @@ services:
         command: "/app/jirassic-park -env .env -debug"
         volumes:
             - "./view:/app/view:ro"
+            - "./.env.app:/app/.env:ro"
         depends_on:
             - proxy
         labels:
@@ -34,7 +35,6 @@ services:
             - "traefik.http.routers.app.rule=Host(`${APP_HOST}`, `localhost`)"
             # - "traefik.http.routers.app.rule=Host(`${APP_HOST}`, `localhost`) && PathPrefix(`/app`)"
             # - "traefik.http.routers.app.middlewares=default-headers@file,app-prefix@file,web-cors@docker"
-            # - "traefik.http.routers.app.middlewares=default-headers@file,web-cors@docker"
             - "traefik.http.routers.app.middlewares=default-headers@file,web-cors@docker"
         profiles:
             - main

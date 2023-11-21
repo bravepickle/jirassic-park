@@ -172,8 +172,8 @@ func main() {
 	var tlsValue string
 	tlsValue = strings.ToLower(os.Getenv(`APP_SERVER_TLS`))
 
-	// http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("view/assets"))))
-	http.Handle("/assets/", http.FileServer(http.Dir("view")))
+	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("view/assets"))))
+	// http.Handle("/assets/", http.FileServer(http.Dir("view")))
 	http.HandleFunc("/", HomePage)
 
 	var err error
