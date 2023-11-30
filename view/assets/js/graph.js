@@ -83,11 +83,7 @@ export default class GraphClass {
     makeDiagram(issues) {
         const elements = this.elements;
 
-        let out = [
-            '---',
-            'title: Issues Flowchart at ' + (new Date()).toLocaleString() + `, ${issues.length} in total`,
-            '---',
-        ];
+        let out = [];
 
         // change graph direction based on short or long task description requested - for optimized views
         if (elements.shortIssueEl.checked) {
@@ -205,12 +201,19 @@ export default class GraphClass {
             }
         });
 
-        const finished = () => out.join("\n");
-        if (!elements.showMatchedEl.checked) {
-            const missingIssuesByRef = _.difference(issueLinks, issueKeys);
-            if (missingIssuesByRef.length > 0) {
-                console.info('[missing by link keys]', missingIssuesByRef);
+        const missingIssuesByRef = _.difference(issueLinks, issueKeys);
+        const headerOut = [
+            '---',
+            'title: Issues Flowchart at ' + (new Date()).toLocaleString() +
+                `, ${issues.length + missingIssuesByRef.length} in total`,
+            '---',
+        ];
 
+        const finished = () => _.concat(headerOut, out).join("\n");
+        if (!elements.showMatchedEl.checked) {
+            if (missingIssuesByRef.length > 0) {
+                // TODO: gray out issues found only by reference outside JQL query
+                // console.info('[missing by link keys]', missingIssuesByRef);
                 return this.apiInstance.searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
                     .then((response) => {
                         response.issues.forEach((item) => {
