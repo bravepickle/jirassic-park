@@ -94,14 +94,14 @@ export default class GraphClass {
 
         let issueKeys = [];
 
-        let addIssueDesc = (issue) => {
+        let addIssueDesc = (issue, options = {}) => {
             if (issueKeys.indexOf(issue.key) !== -1) {
                 return; // already added
             }
 
             issue.fields.summary = issue.fields.summary.replaceAll('"', '');
 
-            out.push(this.makeNode(issue));
+            out.push(this.makeNode(issue, options));
             out.push(`    click ${issue.key} href "${this.utils.makeIssueHref(issue)}" _blank`);
             out.push(''); // separator
 
@@ -212,13 +212,12 @@ export default class GraphClass {
         const finished = () => _.concat(headerOut, out).join("\n");
         if (!elements.showMatchedEl.checked) {
             if (missingIssuesByRef.length > 0) {
-                // TODO: gray out issues found only by reference outside JQL query
                 // console.info('[missing by link keys]', missingIssuesByRef);
                 return this.apiInstance.searchIssues('issue IN (' + missingIssuesByRef.join(', ') + ')')
                     .then((response) => {
                         response.issues.forEach((item) => {
                             if (!elements.hideTestsEl.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
-                                addIssueDesc(item);
+                                addIssueDesc(item, {styles: {fill: '#eee'}});
                             }
                         })
                     }).then(finished);
@@ -228,7 +227,7 @@ export default class GraphClass {
         return new Promise((resolve) => resolve(finished()));
     }
 
-    makeNode(item) {
+    makeNode(item, options = {}) {
         const utils = this.utils;
         const elements = this.elements;
         let title = utils.makeTitle(item, elements.shortIssueEl.checked, true);
@@ -264,13 +263,15 @@ export default class GraphClass {
             case 'Bug':
                 left = '{' + '{';
                 right = '}' + '}';
-                styles.push('fill:#e60073')
+                // styles.push('fill:#e60073')
+                styles.push('fill:' + _.get(options, 'styles.fill', '#e60073'))
                 break;
 
             case 'Epic':
                 left = '>';
                 right = ']';
-                styles.push('fill:#cc00cc')
+                // styles.push('fill:#cc00cc')
+                styles.push('fill:' + _.get(options, 'styles.fill', '#cc00cc'))
                 break;
 
             case 'Sub-task':
@@ -283,24 +284,31 @@ export default class GraphClass {
                     right = ']';
                 }
 
-                styles.push('fill:#66ccff')
+                // styles.push('fill:#66ccff')
+                styles.push('fill:' + _.get(options, 'styles.fill', '#66ccff'))
                 break;
 
             case 'Task':
                 left = '(';
                 right = ')';
-                styles.push('fill:#9999ff')
+                // styles.push('fill:#9999ff')
+                styles.push('fill:' + _.get(options, 'styles.fill', '#9999ff'))
                 break;
 
             case 'Story':
                 left = '(';
                 right = ')';
-                styles.push('fill:#009900')
+                // styles.push('fill:#009900')
+                styles.push('fill:' + _.get(options, 'styles.fill', '#009900'))
                 break;
 
             default:
                 left = '[[';
                 right = ']]'
+
+                if (_.get(options, 'styles.fill')) {
+                    styles.push('fill:' + _.get(options, 'styles.fill'))
+                }
         }
 
         let out = []
