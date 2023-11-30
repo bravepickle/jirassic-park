@@ -217,7 +217,7 @@ export default class GraphClass {
                     .then((response) => {
                         response.issues.forEach((item) => {
                             if (!elements.hideTestsEl.checked || _.get(item, 'fields.issuetype.name') !== 'Test') {
-                                addIssueDesc(item, {styles: {fill: '#eee'}});
+                                addIssueDesc(item, {styles: {fill: '#efefef'}});
                             }
                         })
                     }).then(finished);
