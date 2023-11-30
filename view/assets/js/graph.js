@@ -85,7 +85,7 @@ export default class GraphClass {
 
         let out = [
             '---',
-            'title: Issues Flowchart at ' + (new Date()).toLocaleString(),
+            'title: Issues Flowchart at ' + (new Date()).toLocaleString() + `, ${issues.length} in total`,
             '---',
         ];
 
@@ -127,7 +127,7 @@ export default class GraphClass {
             switch (type.name) {
                 case 'Parent':
                     out.push(`    ${from.key} -. parent .-> ${to.key}`);
-                    break;
+                                        break;
                 case 'Blocks':
                     if (type.dir === 'blocks') {
                         out.push(`    ${from.key} -- blocks --> ${to.key}`);
@@ -144,7 +144,7 @@ export default class GraphClass {
                     break;
                 case 'Relates':
                     out.push(`    ${from.key} -- relates --- ${to.key}`);
-                    break;
+                                        break;
                 default:
                     out.push(`    ${from.key} o-- ${type.dir} --o ${to.key}`);
             }

@@ -154,7 +154,7 @@ export default class Viewer {
         let issueTplEl = document.getElementById('issue-link-tpl')
         let extraParams = utils.parseExtraParams();
 
-        elements.outEl.innerHTML = ''; // clear input
+        elements.outEl.innerHTML = `<div class="text-end counter">${data.issues.length} issues found</div>`; // clear input
 
         data.issues.forEach(function (item) {
             let el = tplEl.content.cloneNode(true);
