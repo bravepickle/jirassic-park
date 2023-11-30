@@ -33,3 +33,4 @@ go.work
 !/build/.gitkeep
 
 /etc/traefik/dynamic.conf.yaml
+/docker-compose.override.yaml
